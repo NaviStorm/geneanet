@@ -5,19 +5,24 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 fic_config="${SCRIPT_DIR}/config"
 SCRIPT_DIR=$(dirname $0)
 NOM_SCRIPT=$(basename $0)
+
 NUMBER='^[0-9]+$'
 nbAppel=0
 #login=$(cat /etc/geneanet-secret/login)
 #pwd=$(cat /etc/geneanet-secret/pwd)
 url="https://gw.geneanet.org"
+
 TMP_DIR="/tmp/geneanet"
 mkdir -p "$TMP_DIR" >/dev/null 1>&2
+
 fic_famc="/${TMP_DIR}/fic_famc"
 fic_fams="/t${TMP_DIR}mp/fic_fams"
-fic_id="/${TMP_DIR}/ID"
+
+fic_id="/${TMP_DIR}/KeyID"
+fic_id_exist="${fic_id}_exist"
+fic_id_link="${fic_id}_link"
+
 fic_fam="/${TMP_DIR}/FAM"
-fic_trouve="${TMP_DIR}/ID_trouve"
-echo > "$fic_trouve"
 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
 user_agent="Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"
 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0"

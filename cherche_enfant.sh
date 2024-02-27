@@ -1,9 +1,12 @@
 #!/bin/bash
 
 cherche_enfant() {
-   local fic_in=$1
-   local enfant_famc="$2"
-   local fic_tmp="$1_${RANDOM}${RANDOM}"
+   local param="$1"
+   local ficGedcom=$(echo "$param" | grep -i "ficGedcom=" | sed -e 's/^.*ficGedcom=\[//i' -e 's/\].*$//g')
+   local fic_in=$(echo "$param" | grep -i "ficEnfant=" | sed -e 's/^.*ficEnfant=\[//i' -e 's/\].*$//g')
+   local numFAMS=$(echo "$param" | grep -i "FAMS=" | sed -e 's/^.*FAMS=\[//i' -e 's/\].*$//g')
+
+   local fic_tmp="${fic_in}${RANDOM}${RANDOM}"
    local TYPE_BLOC
    local uri
    local ch_Parent=0
@@ -12,12 +15,14 @@ cherche_enfant() {
    local ch_Enfant=1
    local ch_Frere=1
    local num_ID=0
-   local num_FAMC=0
    local numFAMS=0
 
-   >"$fic_tmp"
+   log "================== CHERCHE ENFANT =================="
+   log "ficGedcom:[$ficGedcom] fic_in:[$fic_in] numFAMS:[$numFAMS]"
+   touch "$fic_tmp"
    if [[ -f "$fic_in" ]]; then
-      cat "$fic_in" >"$fic_tmp"
+      log "[$fic_in] existe, je le recopie dans [$fic_tmp]"
+      cat "$fic_in" > "$fic_tmp"
    else
       while IFS='' read -r data; do
          echo "$data" >>"$fic_tmp"
@@ -26,6 +31,23 @@ cherche_enfant() {
 
    TYPE_BLOC="NULL"
    while IFS='' read -r html_ligne; do
+      log "html_ligne:[$html_ligne]"
+
+      if [[ "${html_ligne}" == *"${LB_MARIE}$LB_MARIE_AVEC"* && "$TYPE_BLOC" == "" ]]; then
+         TYPE_BLOC="FICHE_UNION"
+         #         echo "Début Conjoint"
+         continue
+      fi
+      if [[ "${html_ligne}" == *"$LB_MARIE"* && "$TYPE_BLOC" == "" ]]; then
+         TYPE_BLOC="FICHE_UNION_AVEC"
+         #         echo "Début Conjoint"
+         continue
+      fi
+      if [[ "${html_ligne}" == *"$LB_MARIE_AVEC"* && "$TYPE_BLOC" == "FICHE_UNION_AVEC" ]]; then
+         TYPE_BLOC="FICHE_UNION"
+         #         echo "Début Conjoint"
+         continue
+      fi
       if [[ "${html_ligne}" == *"<ul"* && "$TYPE_BLOC" == "NULL" ]]; then
          TYPE_BLOC="FICHE_UNION"
          #         echo "Début Conjoint"
@@ -36,7 +58,7 @@ cherche_enfant() {
          #         echo "    Début Enfant"
          continue
       fi
-      if [[ "${html_ligne}" == *"Marié "* && "$TYPE_BLOC" == "FICHE_UNION" ]]; then
+      if [[ "${html_ligne}" == *"$LB_MARIE "* && "$TYPE_BLOC" == "FICHE_UNION" ]]; then
          if echo "${html_ligne}" | grep -q 'a href=\"'; then
             echo "   Epouse : $(echo "${html_ligne}" | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//g')"
          else
@@ -46,7 +68,7 @@ cherche_enfant() {
       fi
 
       # Bloc Conjoint Petit efant
-      if [[ "${html_ligne}" == *"avec"* && "$TYPE_BLOC" == "PETIT_ENFANT" ]]; then
+      if [[ "${html_ligne}" == *"$LB_MARIE_AVEC"* && "$TYPE_BLOC" == "PETIT_ENFANT" ]]; then
          TYPE_BLOC="PETIT_ENFANT_CONJOINT"
          echo "               Début Conjoint Petit enfant (avec)"
          continue
@@ -75,6 +97,7 @@ cherche_enfant() {
          num_FAMC=0
          numFAMS=0
          log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant ] num_ID:[$num_ID] num_FAMC:[$num_FAMC] numFAMS:[$numFAMS]"
+         cherche_indi retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_ENFANT}]?uri=[${uri}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[1]?numFamille=[${numFAMS}]"
          #         cherche_indi retID "$QUI_ENFANT" "$uri" "$ch_Parent" "$ch_Epoux" "$ch_Frere" "$ch_Enfant" "$num_ID" "$num_FAMC" "$numFAMS"
          echo "                  Petit Petit enfant $(echo "${html_ligne}" | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//g')"
          echo "                     Lien Petit Petit enfant $uri"

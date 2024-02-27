@@ -99,8 +99,12 @@ recupFichierFamille() {
    local rep="$1"
    local ficGCOM="$2"
 
-   for fic in "$rep/FAM_*"; do
-      cat $fic >> "$ficGCOM"
+   for fic in "$rep/ID_"*; do
+      cat "$fic" >> "$ficGCOM"
+   done
+
+   for fic in "$rep/FAM_"*; do
+      cat "$fic" >> "$ficGCOM"
    done
 }
 
@@ -113,11 +117,14 @@ usage() {
    echo "   -c            : mode verbose"
    echo "   -v            : mode verbose"
    echo "   -x            : mode verbose (timestampt)"
+   echo "   -o            : fichier out"
+
    echo ""
    echo "   [--u[=]URL]   : Lien url ver la famille a récupérer"
    echo "   [--no-parent] : Ne recherche pas les parents"
    echo "   [--no-epoux]  : Ne recherche pas les epouses"
-   echo "   [--no-frere]  : Ne recherche pas les enfantss"
+   echo "   [--no-frere]  : Ne recherche pas les freres/soeurs"
+   echo "   [--no-enfant] : Ne recherche pas les enfant"
 }
 
 main() {
@@ -146,6 +153,9 @@ main() {
                   ;;            
                no-parent)
                   ch_Parent="0"
+                  ;;
+               no-enfant)
+                  ch_Enfant="0"
                   ;;
                no-epoux)
                   ch_Epoux="0"
@@ -243,7 +253,7 @@ main() {
    echo "$numFAMS" > "${fic_fam}"
 
    init_cnx
-   log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant ] numFAMS:[$numFAMS]"
+   log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant] ch_Frere:[$ch_Frere] numFAMS:[$numFAMS]"
    ged:init "$fic_gedcom"
 
    cherche_indi retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PERE}]?uri=[${uri}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${numFAMS}]"

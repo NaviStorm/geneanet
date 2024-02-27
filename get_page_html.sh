@@ -56,6 +56,7 @@ get_page_html() {
       -H 'Referer: '"$url/$uri&type=tree" \
       -H $"Cookie: $COOKIES" \
       --compressed |\
+      sed -E "s/($LB_JOUR)//g" |\
       sed -e 's/<a  href=/<a href=/g' -e 's/\\u00e0/à/g' -e 's/\\u00e2/â/g' -e 's/\\u00e4/ä/g' -e 's/\\u00e7/ç/g' -e 's/\\u00e8/è/g' -e 's/\\u00e9/é/g' -e 's/\\u00ea/ê/g' -e 's/\\u00eb/ë/g' -e 's/\\u00ee/î/g' |\
       sed -e 's/\\u00ef/ï/g' -e 's/\\u00f4/ô/g' -e 's/\\u00f6/ö/g' -e 's/\\u00f9/ù/g' -e 's/\\u00fb/û/g' -e 's/\\u00fc/ü/g' -e 's/<em>//g' -e 's/<\/em>//g'|\
       sed '/^$/d' > "$fic_tmp_all"
