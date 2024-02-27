@@ -227,7 +227,7 @@ trouver_date() {
          else
             dt_naissance=$(echo "  2  $dt_tag $dt_jour $dt_mois $dt_annee" | tr -s '[:space:]')
          fi
-         if [[ $(grep " - " "$dt_fic_tmp" | wc -l) -eq 1 ]]; then
+         if [[ $(grep " - " "$dt_fic_tmp" | wc -l | bc) -eq 1 ]]; then
             dt_ville=$(grep "$dt_label_date " "$dt_fic_tmp" | sed -e 's/^.* - //g' -e 's/<\/li>.*$//g' -e "s/^ *//g")
          else
             dt_ville=""

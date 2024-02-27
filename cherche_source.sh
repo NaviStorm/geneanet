@@ -1,6 +1,6 @@
 #!/bin/bash
 
-trace_cherche_source="false"
+trace_cherche_source="true"
 
 edit_source() {
     local ref=$1
@@ -28,24 +28,19 @@ edit_source() {
 
 
 cherche_source() {
-    local fic="$1"
-    local ficSource=""
+    local ficSource="$1"
     local _srcIndi="" _srcNaissance="" _srcUnion="" _srcDeces="" x_ligne="false" deb_ligne=0 fin_ligne=0
 
-    ficSource="${pre}_source_$my_pid"
-
-   log "DEB cherche_source fic_tmp_all:[$fic]"
-
-    # Recherche Source pour l'individu
-    sed -e '1,/^<!-- sources -->/d' -e '/^<\/em>/,10000d' -e '1,/^<ul>/d' -e '/^<\/ul>/,10000d' "$fic" > "${ficSource}"
-
+    log "DEB cherche_source ficSource:[$ficSource]"
     while read -r ligne_html; do
         deb_ligne=$(echo $ligne_html | grep -E "^<li>" | wc -l | bc)
         if [[ "$deb_ligne" -eq 1 ]]; then
-            section=$(echo $ligne_html | sed -e 's/<li>//g' | sed -e 's/:.*$//g')
+            section=$(echo $ligne_html | sed -e 's/<li>//g' -e 's/:.*$//g')
             local fin_ligne=$(echo $ligne_html | grep -E "<\/li>" | wc -l | bc)
             if [[ "$fin_ligne" -eq 1 ]]; then
-                ref=$(echo $ligne_html | sed -e 's/^.*'$section': //g' | sed -e 's/<\/li>.*$//g')
+                log "ligne_html:[$ligne_html] section:[$section]"
+                ref=$(echo $ligne_html | sed -e "s/^.*$section: //g" -e 's/<\/li>.*$//g')
+                [[ "$?" -ne 0 ]] && quitter 1
                 edit_source "$ref" "$section" _srcIndi _srcNaissance _srcUnion _srcDeces
                 x_ligne="false"
             else
@@ -57,7 +52,7 @@ cherche_source() {
             if [[ "$x_ligne" == "true" ]]; then
             local deb_ref=$(echo $ligne_html | grep -E "^<dt>" | wc -l | bc)
             if [[ "$deb_ref" -eq 1 ]]; then
-                ref=$(echo $ligne_html | sed -e 's/^<dt>//g' | sed -e 's/<\/dt>.*//g')   
+                ref=$(echo $ligne_html | sed -e 's/^<dt>//g' -e 's/<\/dt>.*//g')   
                 x_ligne="false"
                 edit_source "$ref" "$section" _srcIndi _srcNaissance _srcUnion _srcDeces
             else
@@ -67,7 +62,7 @@ cherche_source() {
             ref=""
             fi
         fi
-    done < $fic_tmp_source
+    done < "$ficSource"
    log "FIN cherche_source _srcIndi:[$_srcIndi]_srcNaissance:[$_srcNaissance] _srcUnion:[$_srcUnion]_srcDeces:[$_srcDeces]"
    eval "$2=\"$_srcIndi\""
    eval "$3=\"$_srcNaissance\""

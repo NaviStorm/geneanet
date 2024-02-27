@@ -5,7 +5,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 fic_config="${SCRIPT_DIR}/config"
 SCRIPT_DIR=$(dirname $0)
 NOM_SCRIPT=$(basename $0)
-
+USER_GENEANET=""
 NUMBER='^[0-9]+$'
 nbAppel=0
 #login=$(cat /etc/geneanet-secret/login)

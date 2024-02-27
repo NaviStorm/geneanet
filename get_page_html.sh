@@ -1,4 +1,4 @@
-trace_get_page_html="false"
+trace_get_page_html="true"
 
 init_label() {
    local init_label_type_sex=$1
@@ -62,7 +62,7 @@ get_page_html() {
       sed '/^$/d' > "$fic_tmp_all"
 
    # 
-   nbRedirect=$(grep "Redirecting to <a href=" "$fic_tmp_all" | wc -l | bc )
+   nbRedirect=$(grep "Redirecting to <a href=" "$fic_tmp_all" | wc -l | bc)
 	log "get_page_html(): nbRedirect[$nbRedirect]"
    if [[ "$nbRedirect" -eq 1 ]]; then
       rm "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent" 2>/dev/null 1>&2

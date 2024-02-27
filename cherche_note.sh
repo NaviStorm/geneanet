@@ -1,6 +1,6 @@
 #!/bin/bash
 
-trace_cherche_note="false"
+trace_cherche_note="true"
 
 edit_note() {
     local type_note=$1
@@ -30,22 +30,11 @@ edit_note() {
 }
 
 cherche_note() {
-    local fic="$1"
-    local ficNote=""
+    local ficNote="$1"
     local _noteIndi="" _noteNaissance="" _noteUnion="" _noteDeces="" _noteFamille="" line=""
     local deb_section=0 note="" type=""
 
-    ficNote="${pre}_note_$my_pid"
-
-    log "DEB: cherche_note()"
-    # Recherche Note pour l'individu
-    sed -e '1,/^<!-- notes -->/d' -e '/^<!-- sources /,10000d' -e 's/<a href="//g' -e 's/<\/a>//g' -e 's/<\/p>//g' -e 's/<br>//g' -e 's/ <p>//g' "$fic" |
-        grep -v 'div.*class' | 
-        grep -v '^<p>$' | 
-        grep -v '^</p>$' | 
-        grep -v '^</div>$' | 
-        grep -v '<p style=' > "$ficNote"
-
+    log "DEB cherche_note ficNote:[$ficNote]"
     while read -r line; do
         deb_section=$(echo "$line" | grep -E "<h3>|<h3 |note-wed-" | wc -l | bc)
         # log "deb_section:[$deb_section] $line"

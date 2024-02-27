@@ -141,6 +141,7 @@ function cherche_indi( ) {
    FAMS=$(echo "$param" | grep -i "numFamille=" | sed -e 's/^.*numFamille=\[//' -e 's/\].*$//g')
 
    URL=$(echo "${URI}" | sed -e "s/^.*$USER_GENEANET?/$USER_GENEANET?/g" -e 's/^.*fiche\///g')
+   URL=$(echo "${URI}" | sed -e "s/^.*$USER_GENEANET?/$USER_GENEANET?/g" -e 's/^.*fiche\///g')
 
    KeyID=$(($(cat $fic_id) + 1))
    echo "$KeyID" >"$fic_id"
@@ -150,7 +151,8 @@ function cherche_indi( ) {
    local FAMS_SUIVANTE=0
 
    local nbAppel=$((nbAppel + 1))
-   local my_pid="${KeyID}_${RANDOM}_${RANDOM}"
+#   local my_pid="${KeyID}_${RANDOM}_${RANDOM}"
+   local my_pid="${KeyID}"
    pre="${TMP_DIR}/gen_$(printf "%04d" "$KeyID")"
    local fic_tmp_all="${pre}_all_page_$my_pid"
    local fic_tmp="${pre}_result_$my_pid"
@@ -163,6 +165,8 @@ function cherche_indi( ) {
    local fic_tmp_epoux_tmp="${pre}_epoux_tmp_$my_pid"
    local fic_tmp_frere="${pre}_parent_frere_$my_pid"
    local fic_tmp_enfant_tmp="${pre}_enfants_$my_pid"
+   local fic_tmp_source="${pre}_source_$my_pid"
+   local fic_tmp_note="${pre}_note_$my_pid"
    local bj
    local bm
    local by
@@ -224,8 +228,15 @@ function cherche_indi( ) {
 
    fam:write "sex=[$sex]?KeyID=[$KeyID]?fams=[$FAMS]"
 
-   cherche_source "$fic_tmp_all" srcIndi srcNaissance srcUnion srcDeces
-   cherche_note "$fic_tmp_all" noteIndi noteNaissance noteUnion noteDeces noteFamille
+   # Recherche des Sources pour l'individu
+   sed -e '1,/^<!-- sources -->/d' -e '/^<\/em>/,10000d' -e '1,/^<ul>/d' -e '/^<\/ul>/,10000d' "$fic_tmp_all" > "${fic_tmp_source}"
+   log "Recherche des Sources fic_tmp_source:[$fic_tmp_source]"
+   cherche_source "$fic_tmp_source" srcIndi srcNaissance srcUnion srcDeces
+
+   # Recherche Note pour l'individu
+   sed -e '1,/^<!-- notes -->/d' -e '/^<!-- sources /,10000d' -e 's/<a href="//g' -e 's/<\/a>//g' -e 's/<\/p>//g' -e 's/<br>//g' -e 's/ <p>//g' "$fic_tmp_all" | grep -v 'div.*class' | grep -v '^<p>$' | grep -v '^</p>$' | grep -v '^</div>$' grep -v '<p style=' > "$fic_tmp_note"
+   log "Recherche des Sources fic_tmp_note:[$fic_tmp_note]"
+   cherche_note "$fic_tmp_note" noteIndi noteNaissance noteUnion noteDeces noteFamille
    log "noteIndi=[$noteIndi] noteNaissance=[$noteNaissance] noteUnion=[$noteUnion] noteDeces=[$noteDeces] noteFamille:[$noteFamille]"
 
    ged:write "$KeyID" "KeyID=[$KeyID]?nom=[$nom]?=prenom=[$prenom]?sex=[$sex]?source_individu=[$srcIndi]?note_individu=[$noteIndi]"
@@ -252,8 +263,15 @@ function cherche_indi( ) {
 
       # Si pas d'époux, je supprime le fichier FAMS
       if [[ "$nbEpoux" -eq 0 ]]; then
-         log "($IdFct): Pad d'époux:[$nbEpoux], je supprime le fichier [$ficFamille]"
-         fam:rm "$FAMS"
+         # Je regarde si il a des enfants dans ce cas, je supprime pas le fichier seulement si il n'y as pas d'enfant d'un conjoint inconnu
+         local nbEnfantEpoux=$(sed -e '1,/<!--  Union/d' -e '/^<!--  Freres/,10000d' "$fic_tmp_all" | grep -v "=MOD_FAM" | sed -e 's/<a href=".*m=RL.*<img src="https/<img src="https/g' | grep -v "? ?" | grep "<a href=\"" | wc -l | bc)
+         if [[ "$nbEnfantEpoux" -eq 0 ]]; then
+            sed -e "1,/<!--  Union/d" -e "/^<!--  Freres/,10000d" "$fic_tmp_all" | grep -v "=MOD_FAM" | sed -e 's/<a href=".*m=RL.*<img src="https/<img src="https/g'> "$fic_tmp_enfant_tmp"
+            log "($IdFct): Pas d'époux:[$nbEpoux] et pas d'enfants, je supprime le fichier [$ficFamille]"
+            fam:rm "$FAMS"
+         else
+            log "($IdFct): Pad d'époux:[$nbEpoux] mais avec des enfants, je ne supprime pas le fichier [$ficFamille]"
+         fi
       fi
       #      echo "Marie($prenom $nom) $nbEpoux fois"
 

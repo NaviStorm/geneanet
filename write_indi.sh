@@ -68,14 +68,14 @@ fam:rm() {
 fam:write() {
    local param="$1"
    local KeyID=0 sex="N" nFAMS=0 labelTypeEpoux="" GEDCOM_mariage="" villeMariage="" GEDCOM_divorce="" villeDivorce="" noteDivorce=""
-   KeyID=$(echo "$param" | grep "KeyID=" | sed -e 's/^.*KeyID=\[//' -e 's/\].*$//g')
-   sex=$(echo "$param" | grep "sex=" | sed -e 's/^.*sex=\[//' -e 's/\].*$//g')
-   nFAMS=$(echo "$param" | grep "fams=" | sed -e 's/^.*fams=\[//' -e 's/\].*$//g')
-   GEDCOM_mariage=$(echo "$param" | grep "GEDCOM_mariage=" | sed -e 's/^.*GEDCOM_mariage=\[//' -e 's/\].*$//g')
-   villeMariage=$(echo "$param" | grep "ville_mariage=" | sed -e 's/^.*ville_mariage=\[//' -e 's/\].*$//g')
-   GEDCOM_divorce=$(echo "$param" | grep "GEDCOM_divorce=" | sed -e 's/^.*GEDCOM_divorce=\[//' -e 's/\].*$//g')
-   villeDivorce=$(echo "$param" | grep "ville_divorce=" | sed -e 's/^.*ville_divorce=\[//' -e 's/\].*$//g')
-   noteDivorce=$(echo "$param" | grep "note_divorce=" | sed -e 's/^.*note_divorce=\[//' -e 's/\].*$//g')
+   KeyID=$(echo "$param" | grep "KeyID=" | sed -e 's/^.*KeyID=\[//' -e 's/\].*$//g' )
+   sex=$(echo "$param" | grep "sex=" | sed -e 's/^.*sex=\[//' -e 's/\].*$//g' )
+   nFAMS=$(echo "$param" | grep "fams=" | sed -e 's/^.*fams=\[//' -e 's/\].*$//g' )
+   GEDCOM_mariage=$(echo "$param" | grep "GEDCOM_mariage=" | sed -e 's/^.*GEDCOM_mariage=\[//' -e 's/\].*$//g' )
+   villeMariage=$(echo "$param" | grep "ville_mariage=" | sed -e 's/^.*ville_mariage=\[//' -e 's/\].*$//g' )
+   GEDCOM_divorce=$(echo "$param" | grep "GEDCOM_divorce=" | sed -e 's/^.*GEDCOM_divorce=\[//' -e 's/\].*$//g' )
+   villeDivorce=$(echo "$param" | grep "ville_divorce=" | sed -e 's/^.*ville_divorce=\[//' -e 's/\].*$//g' )
+   noteDivorce=$(echo "$param" | grep "note_divorce=" | sed -e 's/^.*note_divorce=\[//' -e 's/\].*$//g' )
 
    [[ -z "$nFAMS" ]] && quitter 1
    local ficCOM="${TMP_DIR}/FAM_$$_${nFAMS}"

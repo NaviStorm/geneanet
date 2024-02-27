@@ -11,6 +11,8 @@
 #set -o errtrace
 #trap 'traperror $? $LINENO $BASH_LINENO "$BASH_COMMAND" $(printf "::%s" ${FUNCNAME[@]})' ERR
 
+set -o pipefail
+
 quitter() {
    exit "$1"
 }
@@ -141,9 +143,11 @@ main() {
    local url_param=""
    local numFAMS=1
    local fic_gedcom="${SCRIPT_DIR}/geneanet.ged"
+   local optchar
 
    optspec=":u:ic:o:snvxhv-:"
    while getopts "$optspec" optchar; do
+      echo "optchar:[$optchar]"
       case "${optchar}" in
          -)
             case "${OPTARG}" in
@@ -221,6 +225,7 @@ main() {
             ;;
          u)
             url_param="$OPTARG"
+            echo "ICI url_param:[$url_param]"
             # echo "Parsing option: '-${optchar}' $OPTARG" >&2
             ;;
          *)
