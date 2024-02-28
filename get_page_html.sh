@@ -43,6 +43,7 @@ get_page_html() {
    local fic_tmp_all="$2"
    local fic_tmp="$3"
    local fic_tmp_parent="$4"
+   local fic_error="/tmp/cherror$$"
    local nbRedirect
 
    uri="${1//lang=../lang=${language}}"
@@ -52,28 +53,35 @@ get_page_html() {
    uri=$(echo $uri | sed -e 's/&type=tree//g' | sed -e 's/&type=fiche//g')
 
    log "get_page_html() curl($url/$uri&type=fiche):"
-   curl -s "$url/$uri&type=fiche" \
+   curl -v -s "$url/$uri&type=fiche" \
       -H 'Referer: '"$url/$uri&type=tree" \
       -H $"Cookie: $COOKIES" \
-      --compressed |\
+      --compressed 2>"$fic_error" |\
+      sed -e "s/(.*<a href=\"#.*)//g"  |\
       sed -E "s/($LB_JOUR)//g" |\
       sed -e 's/<a  href=/<a href=/g' -e 's/\\u00e0/à/g' -e 's/\\u00e2/â/g' -e 's/\\u00e4/ä/g' -e 's/\\u00e7/ç/g' -e 's/\\u00e8/è/g' -e 's/\\u00e9/é/g' -e 's/\\u00ea/ê/g' -e 's/\\u00eb/ë/g' -e 's/\\u00ee/î/g' |\
       sed -e 's/\\u00ef/ï/g' -e 's/\\u00f4/ô/g' -e 's/\\u00f6/ö/g' -e 's/\\u00f9/ù/g' -e 's/\\u00fb/û/g' -e 's/\\u00fc/ü/g' -e 's/<em>//g' -e 's/<\/em>//g'|\
       sed '/^$/d' > "$fic_tmp_all"
 
+   local retCode=$(grep "HTTP/2" $fic_error | sed -e "s/^.*HTTP\/2 //g" | bc)
+   if [[ "$retCode" -gt 299 ]]; then
+      log "Erreur retour curl [$retCode] sur le lien [$url/$uri&type=fiche]"
+      return "$retCode"
+   fi
    # 
    nbRedirect=$(grep "Redirecting to <a href=" "$fic_tmp_all" | wc -l | bc)
 	log "get_page_html(): nbRedirect[$nbRedirect]"
    if [[ "$nbRedirect" -eq 1 ]]; then
       rm "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent" 2>/dev/null 1>&2
       echo "ERREUR de redirection [$url/$uri&type=tree]"
-      quitter 0
+      return 1
    else
       grep -Ei "lastname|firstname" "$fic_tmp_all" | tail -1 > "$fic_tmp"
       sed '/^$/d' "$fic_tmp_all" | sed -e "s/&nbsp;/ /g" | sed -e "1,/^<!--  ${portrait} -->/d" | sed -e "/Aperçu de l'arbre/,+10000d" >> "$fic_tmp"
       cat "$fic_tmp" | sed -e "s/&nbsp;/ /g"  > /tmp/toto
       log "FIN get_page_html"
    fi
+   return 0
 }
 
 get_page_html_parent() {

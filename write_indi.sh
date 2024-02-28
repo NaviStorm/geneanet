@@ -77,7 +77,10 @@ fam:write() {
    villeDivorce=$(echo "$param" | grep "ville_divorce=" | sed -e 's/^.*ville_divorce=\[//' -e 's/\].*$//g' )
    noteDivorce=$(echo "$param" | grep "note_divorce=" | sed -e 's/^.*note_divorce=\[//' -e 's/\].*$//g' )
 
-   [[ -z "$nFAMS" ]] && quitter 1
+   if [[ -z "$nFAMS" ]]; then
+      erreur " Le numero de famille est obligatoire"
+      quitter 1
+   fi
    local ficCOM="${TMP_DIR}/FAM_$$_${nFAMS}"
 
    log "DEB ficCOM:[$ficCOM] Param:[$param]"
@@ -124,7 +127,7 @@ fam:search() {
    eval "$3=\"$nFAMS\""
 }
 
-fam:whith_spouse() {
+fam:whithout_spouse() {
       local KeyID="$1"
       local Conjoint="$2"
       local ficFAM=""

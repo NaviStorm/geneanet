@@ -18,6 +18,7 @@ mkdir -p "$TMP_DIR" >/dev/null 1>&2
 fic_famc="/${TMP_DIR}/fic_famc"
 fic_fams="/t${TMP_DIR}mp/fic_fams"
 
+fic_nb_appel="/${TMP_DIR}/nbappel"
 fic_id="/${TMP_DIR}/KeyID"
 fic_id_exist="${fic_id}_exist"
 fic_id_link="${fic_id}_link"
@@ -37,5 +38,7 @@ TAB_LOG=""
 tab=""
 CHRONO="false"
 portrait="Portrait"
+echo "0" > /tmp/gen_nbAppel
+
 
 
