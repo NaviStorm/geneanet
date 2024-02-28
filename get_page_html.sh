@@ -1,4 +1,6 @@
-trace_get_page_html="true"
+#!/usr/local/bin/bash
+
+trace_get_page_html="false"
 
 init_label() {
    local init_label_type_sex=$1
@@ -63,7 +65,7 @@ get_page_html() {
       sed -e 's/\\u00ef/ï/g' -e 's/\\u00f4/ô/g' -e 's/\\u00f6/ö/g' -e 's/\\u00f9/ù/g' -e 's/\\u00fb/û/g' -e 's/\\u00fc/ü/g' -e 's/<em>//g' -e 's/<\/em>//g'|\
       sed '/^$/d' > "$fic_tmp_all"
 
-   local retCode=$(grep "HTTP/2" $fic_error | sed -e "s/^.*HTTP\/2 //g" | bc)
+   local retCode=$(grep "HTTP/2" $fic_error | sed -e "s/^.*HTTP\/2 //g" | wc -l | bc)
    if [[ "$retCode" -gt 299 ]]; then
       log "Erreur retour curl [$retCode] sur le lien [$url/$uri&type=fiche]"
       return "$retCode"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-trace_cherche_note="true"
+trace_cherche_note="false"
 
 edit_note() {
     local type_note=$1

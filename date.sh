@@ -1,4 +1,4 @@
-trace_date="true"
+trace_date="false"
 
 mois_court() {
    local local_mois_court_dm=""
@@ -172,7 +172,7 @@ determine_lable_date() {
 
 
 trouver_date() {
-   trace_trouver_date="true"
+   trace_trouver_date="false"
    local fic="$1"
    local dt_label_date="$2"
    local dt_fic_tmp="${TMP_DIR}/gen_date_${RANDOM}${RANDOM}"

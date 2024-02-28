@@ -1,11 +1,15 @@
-function clean_fichier_temporaire() {
+#!/usr/local/bin/bash
+
+trace_cherche_indi="true"
+
+clean_fichier_temporaire() {
    return
    log "clean_fichier_temporaire()"
    rm "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent" "$fic_tmp_union" "$fic_tmp_parent_pere" "$fic_tmp_parent_mere" 2>/dev/null 1>&2
 }
 
 
-function echo_bloc() {
+echo_bloc() {
    fic=$1
    if [[ -f "$fic" ]]; then
       cat "$fic"
@@ -17,7 +21,7 @@ function echo_bloc() {
 
 }
 
-function supprime_bloc_div() {
+supprime_bloc_div() {
    log "supprime_bloc_div()"
    local fic="$1"
    local bloc=false
@@ -42,13 +46,14 @@ function supprime_bloc_div() {
    done <$fic
 }
 
-function siMarie() {
-   nbEpoux=$(sed -e "1,/<!--  Union/d"  -e "/^<!--  Freres/,10000d" "$1" | grep -E "^Marié|^Avec" | wc -l | bc)
-   return $((nbEpoux + 0))
+siMarie() {
+   local _nbEpoux=0
+   _nbEpoux=$(sed -e "1,/<!--  Union/d"  -e "/^<!--  Freres/,10000d" "$1" | grep -E "^Marié|^Avec" | wc -l | bc)
+   return $((_nbEpoux + 0))
 }
 
 
-function incFAM() {
+incFAM() {
    local fic_fam="$1"
    local nFAM=$(($(cat "$fic_fam") + 1))
    echo $nFAM | tee "$fic_fam"
@@ -56,21 +61,21 @@ function incFAM() {
 }
 
 
-function decID() {
+decID() {
    local fic_id="$1"
    local KeyID=$(($(cat "$fic_id") - 1))
    echo "$(($(cat "$fic_id") + 1))" >"$fic_id"
    echo "$KeyID"
 }
 
-function KeyID:inc() {
+KeyID:inc() {
    local fic_id="$1"
    local KeyID=$(($(cat "$fic_id") + 1))
    echo "$KeyID" | tee "$fic_id"
 }
 
 
-function KeyID:search() {
+KeyID:search() {
    trace_individu_deja_traite="true"
 
    local KeyID="$1"
@@ -92,13 +97,13 @@ function KeyID:search() {
    fi
 }
 
-function KeyID:get() {
+KeyID:get() {
    local KeyID="$1"
 
    grep "@I$KeyID@" "$fic_id_link" | sed -e 's/ .*$//g'
 }
 
-function individu:get() {
+individu:get() {
    local fic="$1"
    local _zone=""
    local _nom=""
@@ -125,7 +130,7 @@ function individu:get() {
 #   $6 : Chercher les freres
 #   $7 : Chercher les enfants
 #   $8 : numero FAMS
-function cherche_indi( ) {
+cherche_indi( ) {
    export tab="$tab   "
    local param="$2"
    local KeyID ficGedcom Qui URI URL getParent getEpoux getFrere getEnfant FAMS
@@ -150,9 +155,7 @@ function cherche_indi( ) {
    local ficFamille="${TMP_DIR}/FAM_$$_${FAMS}"
    local FAMS_SUIVANTE=0
 
-   nbAppel=$(($(cat "$fic_nb_appel") + 1)) | tee "$fic_nb_appel"
-
-   local nbAppel=$((nbAppel + 1))
+   nbAppel=$((nbAppel + 1))
 #   local my_pid="${KeyID}_${RANDOM}_${RANDOM}"
    local my_pid="${KeyID}"
    pre="${TMP_DIR}/gen_$(printf "%04d" "$KeyID")"
@@ -231,7 +234,7 @@ function cherche_indi( ) {
    if [[ "$?" -eq 1 ]]; then
       export tab=$(echo $tab | sed -e 's/   //')
       log "($IdFct): $KeyID ($(KeyID:get $KeyID)) Déjà traité [${ID_INDI}]"
-      return 1
+      return "$CODE_DEJA_TRAITE"
    fi
 
    fam:write "sex=[$sex]?KeyID=[$KeyID]?fams=[$FAMS]"
@@ -240,10 +243,11 @@ function cherche_indi( ) {
    sed -e '1,/^<!-- sources -->/d' -e '/^<\/em>/,10000d' -e '1,/^<ul>/d' -e '/^<\/ul>/,10000d' "$fic_tmp_all" > "${fic_tmp_source}"
    log "Recherche des Sources fic_tmp_source:[$fic_tmp_source]"
    cherche_source "$fic_tmp_source" srcIndi srcNaissance srcUnion srcDeces
+   log "srcIndi=[$srcIndi] srcNaissance=[$srcNaissance] srcUnion=[$srcUnion] srcDeces=[$srcDeces]"
 
    # Recherche Note pour l'individu
-   sed -e '1,/^<!-- notes -->/d' -e '/^<!-- sources /,10000d' -e 's/<a href="//g' -e 's/<\/a>//g' -e 's/<\/p>//g' -e 's/<br>//g' -e 's/ <p>//g' "$fic_tmp_all" | grep -v 'div.*class' | grep -v '^<p>$' | grep -v '^</p>$' | grep -v '^</div>$' grep -v '<p style=' > "$fic_tmp_note"
-   log "Recherche des Sources fic_tmp_note:[$fic_tmp_note]"
+   sed -e '1,/^<!-- notes -->/d' -e '/^<!-- sources /,10000d' -e 's/<a href="//g' -e 's/<\/a>//g' -e 's/<\/p>//g' -e 's/<br>//g' -e 's/ <p>//g' "$fic_tmp_all" | grep -v 'div.*class' | grep -v '^<p>$' | grep -v '^</p>$' | grep -v '^</div>$' | grep -v '<p style=' > "$fic_tmp_note"
+   log "Recherche des Notes fic_tmp_note:[$fic_tmp_note]"
    cherche_note "$fic_tmp_note" noteIndi noteNaissance noteUnion noteDeces noteFamille
    log "noteIndi=[$noteIndi] noteNaissance=[$noteNaissance] noteUnion=[$noteUnion] noteDeces=[$noteDeces] noteFamille:[$noteFamille]"
 
@@ -280,81 +284,80 @@ function cherche_indi( ) {
          else
             log "($IdFct): Pad d'époux:[$nbEpoux] mais avec des enfants, je ne supprime pas le fichier [$ficFamille]"
          fi
-      fi
-      #      echo "Marie($prenom $nom) $nbEpoux fois"
+      else
+         local ref_epoux=0 ligne_precedente_marie_avec=0 numMariage=0 firstFAMS=0
+         local SansDate=0
+         while IFS='' read -r ligne_html; do
+            ### log "($IdFct) Lecture de la ligne [$ligne_html]"
+            local epoux_trouve=$(echo $ligne_html | grep -E "^$LB_MARIE|^$LB_RELATION|^$LB_FIANCE|^$LB_MARIE_AVEC" | wc -l | bc)
+            SansDate=$(echo $ligne_html | grep -E "^${LB_MARIE}${LB_MARIE_AVEC}" | wc -l | bc)
+            local ref_epoux=$(echo "$ligne_html" | grep -Ei "${LB_MARIE_AVEC}.*<a href=" | wc -l | bc)
 
-      local epoux_x=0 ref_epoux=0 ligne_precedente_marie_avec=0 numMariage=0 firstFAMS=0
-      local SansDate=0
-      while IFS='' read -r ligne_html; do
-         ### log "($IdFct) Lecture de la ligne [$ligne_html]"
-         local epoux_trouve=$(echo $ligne_html | grep -E "^$LB_MARIE|^$LB_RELATION|^$LB_FIANCE|^$LB_MARIE_AVEC" | wc -l | bc)
-         SansDate=$(echo $ligne_html | grep -E "^${LB_MARIE}${LB_MARIE_AVEC}" | wc -l | bc)
-         local ref_epoux=$(echo "$ligne_html" | grep -Ei "${LB_MARIE_AVEC}.*<a href=" | wc -l | bc)
+            ### log "($IdFct) epoux_trouve:[$epoux_trouve] SansDate:[$SansDate] ref_epoux:[$ref_epoux]"
 
-         ### log "($IdFct) epoux_trouve:[$epoux_trouve] SansDate:[$SansDate] ref_epoux:[$ref_epoux]"
-
-         if [[ "$epoux_trouve" -eq 1 && "$SansDate" -eq 0  ]]; then
-            # echo "($IdFct): $ligne_html"
-            echo "$ligne_html" | sed -e 's/&nbsp;/ /g' | sed -e 's/<em>//g' | sed -e "s/$LG_MARIED_F/$LG_MARIED_M/g"> "$fic_tmp_epoux"
-            trouver_date "$fic_tmp_epoux" "$LG_MARIED_M" date_mariage tgNaissance bj bm by bj_Fin bm_Fin by_Fin ville_mariage
-            log "($IdFct): date_mariage:[$date_mariage] tgNaissance:[$tgNaissance] bj:$bj] bm:[$bm] by:[$by] bj_Fin:[$bj_Fin] bm_Fin:[$bm_Fin] by_Fin:[$by_Fin] ville_mariage:[$ville_mariage]"
-            local epoux_x=1
-            ligne_precedente_marie_avec=1
-            numMariage=$(( numMariage + 1 ))
-            continue
-         fi
-         if [[ "$ref_epoux" -eq 1 ]]; then
-            if [[ "$numMariage" -gt 1 ]]; then
-               # Plusieur mariage, j'incremente le N° Famille
-               firstFAMS="$FAMS"
-               FAMS=$(incFAM "$fic_fam")
-               fam:write "fams=[$FAMS]?sex=[$sex]?KeyID=[$KeyID]?"
-               # Initialissation du fichier Famill
+            if [[ "$epoux_trouve" -eq 1 && "$SansDate" -eq 0  ]]; then
+               # echo "($IdFct): $ligne_html"
+               echo "$ligne_html" | sed -e 's/&nbsp;/ /g' | sed -e 's/<em>//g' | sed -e "s/$LG_MARIED_F/$LG_MARIED_M/g"> "$fic_tmp_epoux"
+               trouver_date "$fic_tmp_epoux" "$LG_MARIED_M" date_mariage tgNaissance bj bm by bj_Fin bm_Fin by_Fin ville_mariage
+               log "($IdFct): date_mariage:[$date_mariage] tgNaissance:[$tgNaissance] bj:$bj] bm:[$bm] by:[$by] bj_Fin:[$bj_Fin] bm_Fin:[$bm_Fin] by_Fin:[$by_Fin] ville_mariage:[$ville_mariage]"
+               ligne_precedente_marie_avec=1
+               numMariage=$(( numMariage + 1 ))
+               continue
             fi
-            # Verifier si divorcé
-            nbDivorce=$(echo "$ligne_html" | grep -i "${LB_DIVORCE}" | wc -l | bc)
-            echo "========> ligne_html:[$ligne_html] nbDivorce:[$nbDivorce]"
-            if [[ "$nbDivorce" -eq 1 ]]; then
-               echo "$ligne_html" | sed -e 's/&nbsp;/ /g' | sed -e 's/<em>//g' | sed -e "s/^.*$LB_DIVORCE/$LB_DIVORCE/g" -e "s/ ${LB_AVEC}$//g"> "$fic_tmp_divorce"
-               trouver_date "$fic_tmp_divorce" "$LB_DIVORCE" GEDCOM_divorce tgDivorce divJ divM divY divJ_Fin divM_Fin divY_Fin villeDivorce
-               # recherche ville Divorce/note
-               nomConjoint=$(echo "$ligne_html" | sed -e 's/^.*">//g' -e 's/<.*$//g' | sed -e 's/ /\.\*/g')
-               villeDivorce=$(grep "Divorce.*${nomConjoint}.* - " "$fic_tmp_all" | wc -l | bc)
-               echo "villeDivorce:[$villeDivorce]"
-               if [[ "$villeDivorce" -eq 1 ]]; then
-                  villeDivorce=$(grep -A2 "Divorce.*${nomConjoint}.* - " "$fic_tmp_all" | sed -e 's/^.* - //g' -e "s/<.*$//g")
-               else
-                  villeDivorce=""  
+            if [[ "$ref_epoux" -eq 1 ]]; then
+               if [[ "$numMariage" -gt 1 ]]; then
+                  # Plusieur mariage, j'incremente le N° Famille
+                  firstFAMS="$FAMS"
+                  FAMS=$(incFAM "$fic_fam")
+                  fam:write "fams=[$FAMS]?sex=[$sex]?KeyID=[$KeyID]?"
+                  # Initialissation du fichier Famill
                fi
-               noteDivorce=$(grep -A2 "Divorce.*${nomConjoint}" "$fic_tmp_all" | grep "nnotes" | sed -e "s/^.*nnotes\">//g" -e "s/<.*$//g")
-               log "($IdFct): GEDCOM_divorce:[$GEDCOM_divorce] tgDivorce:[$tgDivorce] divJ:[$divJ] divM:[$divM] divY:[$divY] divJ_Fin:[$divJ_Fin] divM_Fin:[$divM_Fin] divY_Fin:[$divY_Fin] villeDivorce:[$villeDivorce] noteDivorce:[$noteDivorce]"
-            fi
-            local lien_epoux=$(echo $ligne_html | sed -e 's/^.*<a href="//g' | sed -e 's/">.*$//g')
-            #            echo "URL Conjoint de ($prenom $nom) : [$lien_epoux]"
-            ligne_precedente_marie_avec=0
-
-            # Pour l'épouse je n'increment pas le N°Famills (FAMS)
-            log "($IdFct): Je recherche l'épouse de [$KeyID]  pour la famille FAMS[$FAMS]"
-            cherche_indi retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_EPOUSE}]?uri=[${lien_epoux}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS}]"
-            local retCode="$?"
-            [[ "$retCode" -gt 299 ]] && return "$retCode"
-            if [[ "$retCode" -eq 0 ]]; then
-               # Ecriture dans fichier FAM, qui sera contatené dans le fichier ged à la fin
-               log "($IdFct): J'écris dans fichier FAMS[$FAMS] KeyID:[$KeyID]"
-               fam:write "fams=[$FAMS]?GEDCOM_mariage=[$date_mariage]?ville_mariage=[$ville_mariage]?GEDCOM_divorce=[$GEDCOM_divorce]?ville_divorce=[$villeDivorce]?note_divorce=[$noteDivorce]"
-            fi
-            local epoux_x=0
-            local nbEpoux=$(($nbEpoux - 1))
-            #            echo "Epoux restant:[$nbEpoux]"
-            if [[ "$nbEpoux" -eq 0 ]]; then
-               break
-            fi
-         else
-            if [[ "$epoux_trouve" -ne 1 ]] ; then 
+               # Verifier si divorcé
+               nbDivorce=$(echo "$ligne_html" | grep -i "${LB_DIVORCE}" | wc -l | bc)
+               echo "========> ligne_html:[$ligne_html] nbDivorce:[$nbDivorce]"
+               if [[ "$nbDivorce" -eq 1 ]]; then
+                  echo "$ligne_html" | sed -e 's/&nbsp;/ /g' | sed -e 's/<em>//g' | sed -e "s/^.*$LB_DIVORCE/$LB_DIVORCE/g" -e "s/ ${LB_AVEC}$//g"> "$fic_tmp_divorce"
+                  trouver_date "$fic_tmp_divorce" "$LB_DIVORCE" GEDCOM_divorce tgDivorce divJ divM divY divJ_Fin divM_Fin divY_Fin villeDivorce
+                  # recherche ville Divorce/note
+                  nomConjoint=$(echo "$ligne_html" | sed -e 's/^.*">//g' -e 's/<.*$//g' | sed -e 's/ /\.\*/g')
+                  villeDivorce=$(grep "Divorce.*${nomConjoint}.* - " "$fic_tmp_all" | wc -l | bc)
+                  echo "villeDivorce:[$villeDivorce]"
+                  if [[ "$villeDivorce" -eq 1 ]]; then
+                     villeDivorce=$(grep -A2 "Divorce.*${nomConjoint}.* - " "$fic_tmp_all" | sed -e 's/^.* - //g' -e "s/<.*$//g")
+                  else
+                     villeDivorce=""  
+                  fi
+                  noteDivorce=$(grep -A2 "Divorce.*${nomConjoint}" "$fic_tmp_all" | grep "nnotes" | sed -e "s/^.*nnotes\">//g" -e "s/<.*$//g")
+                  log "($IdFct): GEDCOM_divorce:[$GEDCOM_divorce] tgDivorce:[$tgDivorce] divJ:[$divJ] divM:[$divM] divY:[$divY] divJ_Fin:[$divJ_Fin] divM_Fin:[$divM_Fin] divY_Fin:[$divY_Fin] villeDivorce:[$villeDivorce] noteDivorce:[$noteDivorce]"
+               fi
+               local lien_epoux=$(echo $ligne_html | sed -e "s/<a href=\"/\n<a href=\"/g" | grep -v "&m=\l&t=|&i1=\|&i2=" | grep "&p=\|&n=" | sed -e 's/^.*<a href="//g' | sed -e 's/">.*$//g')
+               #            echo "URL Conjoint de ($prenom $nom) : [$lien_epoux]"
                ligne_precedente_marie_avec=0
+
+               # Pour l'épouse je n'increment pas le N°Famills (FAMS)
+               log "($IdFct): Je recherche l'épouse de [$KeyID]  pour la famille FAMS[$FAMS]"
+               cherche_indi retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_EPOUSE}]?uri=[${lien_epoux}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS}]"
+               local retCode="$?"
+               if [[ "$retCode" -gt 299 ]]; then
+                  continue
+               fi
+               if [[ "$retCode" -eq 0 ]]; then
+                  # Ecriture dans fichier FAM, qui sera contatené dans le fichier ged à la fin
+                  log "($IdFct): J'écris dans fichier FAMS[$FAMS] KeyID:[$KeyID]"
+                  fam:write "fams=[$FAMS]?GEDCOM_mariage=[$date_mariage]?ville_mariage=[$ville_mariage]?GEDCOM_divorce=[$GEDCOM_divorce]?ville_divorce=[$villeDivorce]?note_divorce=[$noteDivorce]"
+               fi
+               nbEpoux=$((nbEpoux - 1))
+               if [[ "$nbEpoux" -eq 0 ]]; then
+                  # Plus d'époux, je sors
+                  break
+               fi
+            else
+               if [[ "$epoux_trouve" -ne 1 ]] ; then 
+                  ligne_precedente_marie_avec=0
+               fi
             fi
-         fi
-      done <$fic_tmp_epoux_tmp
+         done <$fic_tmp_epoux_tmp
+      fi
    else
       log "($IdFct): Je ne recherche pas les époux/épouses"
    fi
@@ -376,13 +379,15 @@ function cherche_indi( ) {
       if [[ "$nb_parent" -ne 0 ]]; then
          FAMS_SUIVANTE=$(incFAM "$fic_fam")
          # Ecriture dans le fichier ged la famille, je suis l'enfant de la famille FAMS
+         # Je nettoie la ligne car elle peut contenir 3 url (tree, lien, titre)
+         # <a href ==> tree (&m=...)></a>     <a href==>Lien Parent (&p=...&n=...)> Nom Prenom</a>     <a href==>titre(&t=..)></a>
+         # ==> je mets '<a href==' par ligne et ensuite j'exclue "&m=" et "&t=" et j'inclue "&p=" ou "&n="
          log "($IdFct): Nb Parent : [$nb_parent]"
-         local nom_pere=$(grep "^.*href" "$fic_tmp_parent_pere" | head -1 | sed -e 's/<bdo.*$//g' | sed -e 's/^.*fiche">//' | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//' )
-         local lien_pere=$(grep "^.*href" "$fic_tmp_parent_pere" | head -1 | sed -e 's/^.*href="//g' | sed -e 's/">.*$//')
-         local nom_mere=$(grep "^.*href" "$fic_tmp_parent_mere" | tail -1 | sed -e 's/<bdo.*$//g' | sed -e 's/^.*fiche">//' | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//')
-         local lien_mere=$(grep "^.*href" "$fic_tmp_parent_mere" | tail -1 | sed -e 's/^.*href="//g' | sed -e 's/">.*$//')
+         local  nom_pere=$(sed -e "s/<a href=\"/\n<a href=\"/g" "$fic_tmp_parent_pere" | grep -v "&m=\|&t=||&i1=\|&i2=" | grep "&p=\|&n=" | grep "^.*href" | head -1 | sed -e 's/<bdo.*$//g' | sed -e 's/^.*fiche">//' | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//' )
+         local lien_pere=$(sed -e "s/<a href=\"/\n<a href=\"/g" "$fic_tmp_parent_pere" | grep -v "&m=\|&t=||&i1=\|&i2=" | grep "&p=\|&n=" | grep "^.*href" | head -1 | sed -e 's/^.*href="//g' | sed -e 's/">.*$//')
+         local  nom_mere=$(sed -e "s/<a href=\"/\n<a href=\"/g" "$fic_tmp_parent_mere" | grep -v "&m=\|&t=||&i1=\|&i2=" | grep "&p=\|&n=" | grep "^.*href" | tail -1 | sed -e 's/<bdo.*$//g' | sed -e 's/^.*fiche">//' | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//' )
+         local lien_mere=$(sed -e "s/<a href=\"/\n<a href=\"/g" "$fic_tmp_parent_mere" | grep -v "&m=\|&t=||&i1=\|&i2=" | grep "&p=\|&n=" | grep "^.*href" | tail -1 | sed -e 's/^.*href="//g' | sed -e 's/">.*$//')
          log "($IdFct): nom_pere:[$nom_pere] lien_pere:[$lien_pere] nom_mere:[$nom_mere] lien_mere:[$lien_mere]"
-
          # Recherche le Père
          if [[ "$nom_pere" == *"? ?"* || "$nom_pere" == "" || "$nom_pere" == *"null null"* ]]; then
             log "($IdFct): Pas de père [$nom_pere] [$lien_pere] $nom $prenom" "$getParent" "0" "$getFrere"
@@ -480,14 +485,17 @@ function cherche_indi( ) {
       echo "Je ne recherche pas les parents"
    fi
 
-   if [[ "$getEnfant" == "1" ]]; then
+   # Je ne recherche pas enfant du début de la branche
+   # TO-DO ==> Doit être une option
+   if [[ "$getEnfant" == "1" && "$keyID" != "1" ]]; then
       log "($IdFct): Recherche des enfants"
       sed -e "1,/<!--  Union/d" -e "/^<!--  Freres/,10000d" "$fic_tmp_all" | grep -v "=MOD_FAM" | sed -e 's/<a href=".*m=RL.*<img src="https/<img src="https/g'> "$fic_tmp_enfant_tmp"
       html_ligne_prec=""
       while IFS='' read -r html_ligne; do
          if [[ "$html_ligne" == *" href=\""* ]]; then
-            lien=$(echo $html_ligne | sed -e 's/^.*href=\"//g' -e 's/".*$//g')
+            lien=$(echo $html_ligne | sed -e "s/<a href=\"/\n<a href=\"/g" | grep -v "&m=\l&t=|&i1=\|&i2=" | grep "&p=\|&n=" | sed -e 's/^.*href=\"//g' -e 's/".*$//g')
             FAMS_SUIVANTE=$(incFAM "$fic_fam")
+            ch_Parent=0; ch_Epoux=0; ch_Enfant=0
             cherche_indi retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PERE}]?uri=[${lien}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${FAMS_SUIVANTE}]"
             local retCode="$?"
             [[ "$retCode" -gt 299 ]] && return "$retCode"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-trace_cherche_source="true"
+trace_cherche_source="false"
 
 edit_source() {
     local ref=$1
