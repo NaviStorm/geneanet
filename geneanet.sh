@@ -55,38 +55,8 @@ source "${SCRIPT_DIR}/cherche_note.sh"
 source "${SCRIPT_DIR}/write_indi.sh"
 source "${SCRIPT_DIR}/${language}/const.sh"
 
-incremente_famille() {
-   local famille=0
-   if [[ "$1" == "famc" ]]; then
-      if [[ ! -f "$fic_famc" ]]; then
-         echo "le fichier n'existe pas"
-         quitter 1
-      else
-         famille=$(cat $fic_famc)
-      fi
-   elif [[ "$1" == "fams" ]]; then
-      if [[ ! -f "$fic_fams" ]]; then
-         echo "le fichier n'existe pas"
-         quitter 1
-      else
-         famille=$(cat $fic_fams)
-      fi
-   fi
-   famille=$((famille + 1))
-   eval "$2=\"$famille\""
-
-}
-
 initialise_individu() {
    echo "0" > "${fic_id}"
-}
-
-initialise_famc() {
-   echo "-1" >${fic_famc}
-}
-
-initialise_fams() {
-   echo "-1" >${fic_fams}
 }
 
 init_cnx(){
@@ -246,11 +216,11 @@ main() {
       initialise_individu
    fi
 
-   if [[ "$clean_tmp_dir" == "true" ]]; then
-      rm /${TMP_DIR}/gen_* 2>/dev/null 1>&2
-   fi
 
-   uri=$(echo "$url_param" | sed -e 's/https...gw.geneanet.org.//g' | sed -e 's/hirtrey000_w/hirtrey/g' | sed -e "s/lang=../lang=${language}/g")
+   rm -rf ${TMP_DIR} 2>/dev/null 1>&2 || true
+   mkdir ${TMP_DIR} 2>/dev/null 1>&2 || true
+
+   uri=$(echo "$url_param" | sed -e 's/https...gw.geneanet.org.//g' | sed -e "s/lang=../lang=${language}/g")
 
    if [[ ! -f "${fic_id}" ]]; then
       echo "0" > "${fic_id}"
@@ -261,9 +231,9 @@ main() {
    log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant] ch_Frere:[$ch_Frere] numFAMS:[$numFAMS]"
    ged:init "$fic_gedcom"
 
-   cherche_indi retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PERE}]?uri=[${uri}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${numFAMS}]"
+   individu:search retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PERE}]?uri=[${uri}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${numFAMS}]"
    recupFichierFamille "$TMP_DIR" "$fic_gedcom"
-   echo "terminé"
+   echo "Traitement terminé"
 }
 
 main "$@"

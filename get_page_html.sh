@@ -45,7 +45,7 @@ get_page_html() {
    local fic_tmp_all="$2"
    local fic_tmp="$3"
    local fic_tmp_parent="$4"
-   local fic_error="/tmp/cherror$$"
+   local fic_error="/tmp/fct_get_page_html_$$"
    local nbRedirect
 
    uri="${1//lang=../lang=${language}}"
@@ -68,6 +68,7 @@ get_page_html() {
    local retCode=$(grep "HTTP/2" $fic_error | sed -e "s/^.*HTTP\/2 //g" | wc -l | bc)
    if [[ "$retCode" -gt 299 ]]; then
       log "Erreur retour curl [$retCode] sur le lien [$url/$uri&type=fiche]"
+      rm "$fic_error" 2>/dev/null
       return "$retCode"
    fi
    # 
@@ -79,8 +80,7 @@ get_page_html() {
       return 1
    else
       grep -Ei "lastname|firstname" "$fic_tmp_all" | tail -1 > "$fic_tmp"
-      sed '/^$/d' "$fic_tmp_all" | sed -e "s/&nbsp;/ /g" | sed -e "1,/^<!--  ${portrait} -->/d" | sed -e "/Aperçu de l'arbre/,+10000d" >> "$fic_tmp"
-      cat "$fic_tmp" | sed -e "s/&nbsp;/ /g"  > /tmp/toto
+      sed '/^$/d' "$fic_tmp_all" | sed -e "s/&nbsp;/ /g" | sed -e "1,/^<!--  ${portrait} -->/d" | sed -e "/Aperçu de l'arbre/,+10000d" -e "s/&nbsp;/ /g" >> "$fic_tmp"
       log "FIN get_page_html"
    fi
    return 0

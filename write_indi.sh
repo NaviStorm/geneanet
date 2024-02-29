@@ -13,10 +13,18 @@ ged:init() {
    } > "$ficGCOM"
 }
 
+ged:filename() {
+   local KeyID="$1"
+   echo "${TMP_DIR}/ID_${KeyID}"
+}
+
+
 ged:write() {
-   local ficCOM="${TMP_DIR}/ID_$1"
+   local numID="$1"
    local param="$2"
    local KeyID nom prenom sex noteIndividu dateNaissance VilleNaissance sourceNnaissance noteNaissance dateDeces villeDeces srcDeces noteDeces fams
+
+   ficCOM=$(ged:filename "$numID")
 
    log "ficCOM:[$ficCOM] Param: [$param]"
    KeyID=$(echo "$param" | grep "KeyID=" | sed -e 's/^.*KeyID=\[//' -e 's/\].*$//g')
@@ -60,14 +68,25 @@ ged:write() {
 
 
 fam:rm() {
-   local ficCOM="${TMP_DIR}/FAM_$$_${1}"
+   local nFAMS="$1" 
+   local ficCOM=""
+
+   ficCOM=$(fam:filename "$nFAMS")
    rm "$ficCOM"
    return "$?"
 }
 
+fam:filename() {
+   local nFAMS="$1"
+
+   echo "${TMP_DIR}/FAM_${nFAMS}"
+}
+
+
 fam:write() {
    local param="$1"
-   local KeyID=0 sex="N" nFAMS=0 labelTypeEpoux="" GEDCOM_mariage="" villeMariage="" GEDCOM_divorce="" villeDivorce="" noteDivorce=""
+   local KeyID=0 sex="N" nFAMS=0 labelTypeEpoux="" GEDCOM_mariage="" villeMariage="" GEDCOM_divorce="" villeDivorce="" noteDivorce="" nChild="" ficCOM="" nbEpoux=0
+   
    KeyID=$(echo "$param" | grep "KeyID=" | sed -e 's/^.*KeyID=\[//' -e 's/\].*$//g' )
    sex=$(echo "$param" | grep "sex=" | sed -e 's/^.*sex=\[//' -e 's/\].*$//g' )
    nFAMS=$(echo "$param" | grep "fams=" | sed -e 's/^.*fams=\[//' -e 's/\].*$//g' )
@@ -76,12 +95,13 @@ fam:write() {
    GEDCOM_divorce=$(echo "$param" | grep "GEDCOM_divorce=" | sed -e 's/^.*GEDCOM_divorce=\[//' -e 's/\].*$//g' )
    villeDivorce=$(echo "$param" | grep "ville_divorce=" | sed -e 's/^.*ville_divorce=\[//' -e 's/\].*$//g' )
    noteDivorce=$(echo "$param" | grep "note_divorce=" | sed -e 's/^.*note_divorce=\[//' -e 's/\].*$//g' )
+   nChild=$(echo "$param" | grep "child=" | sed -e 's/^.*child=\[//' -e 's/\].*$//g' )
 
    if [[ -z "$nFAMS" ]]; then
       erreur " Le numero de famille est obligatoire"
       quitter 1
    fi
-   local ficCOM="${TMP_DIR}/FAM_$$_${nFAMS}"
+   ficCOM=$(fam:filename "$nFAMS")
 
    log "DEB ficCOM:[$ficCOM] Param:[$param]"
    # Initialisation du fichier Famille
@@ -98,13 +118,19 @@ fam:write() {
          labelTypeEpoux="INCO @I$KeyID@"
       fi
 
+      nbEpoux=$(grep "HUSB\|WIFE\|INCO" "$ficCOM" | wc -l | bc | wc -l)
+      if [[ "$nbEpoux" -eq 2 ]]; then
+         erreur "Il y a deja 2 conjoints dans le fichier Famille [$nFAMS]"
+         quitter 1
+      fi
+
       existeDeja=$(grep "$labelTypeEpoux" "$ficCOM" | wc -l | bc)
       log "Recherche $labelTypeEpoux dans fichier famille existeDeja:[$existeDeja]"
       if [[ "$existeDeja" -eq 2 ]]; then
-         erreur "($IdFct) Il y a deja $labelTypeEpoux $nom $prenom (@I$KeyID@) dans le fichier Famille [$nFAMS]"
+         erreur "Il y a deja $labelTypeEpoux $nom $prenom (@I$KeyID@) dans le fichier Famille [$nFAMS]"
          quitter 1
       else
-         log "($IdFct) Ecriture dans fichier nFAMS ${nFAMS} $labelTypeEpoux Qui:[$Qui]"
+         log "Ecriture dans fichier nFAMS ${nFAMS} $labelTypeEpoux Qui:[$Qui]"
          echo "  1 $labelTypeEpoux" >> "$ficCOM"
       fi
    fi
@@ -115,6 +141,8 @@ fam:write() {
    [[ -n "$GEDCOM_divorce" ]] && echo " $GEDCOM_divorce" >> "$ficCOM"
    [[ -n "$villeDivorce" ]] && echo "  2 PLAC $villeDivorce" >> "$ficCOM"
    [[ -n "$noteDivorce" ]] && echo "  2 NOTE $noteDivorce" >> "$ficCOM"
+
+   [[ -n "$nChild" ]] && echo "  1 CHIL @I$nChild@" >> "$ficCOM"
 }
 
 fam:search() {

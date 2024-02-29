@@ -97,13 +97,13 @@ cherche_enfant() {
          num_FAMC=0
          numFAMS=0
          log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant ] num_ID:[$num_ID] num_FAMC:[$num_FAMC] numFAMS:[$numFAMS]"
-         cherche_indi retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_ENFANT}]?uri=[${uri}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[1]?numFamille=[${numFAMS}]"
+         individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_ENFANT}]?uri=[${uri}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[1]?numFamille=[${numFAMS}]"
          local retCode="$?"
          if [[ "$retCode" -ne 0 ]]; then
-            log "Erreur retour cherche_indi:[$retCode]"
+            log "Erreur retour individu:search:[$retCode]"
             return "$retCode"
          fi
-         #         cherche_indi retID "$QUI_ENFANT" "$uri" "$ch_Parent" "$ch_Epoux" "$ch_Frere" "$ch_Enfant" "$num_ID" "$num_FAMC" "$numFAMS"
+         #         individu:search retID "$QUI_ENFANT" "$uri" "$ch_Parent" "$ch_Epoux" "$ch_Frere" "$ch_Enfant" "$num_ID" "$num_FAMC" "$numFAMS"
          echo "                  Petit Petit enfant $(echo "${html_ligne}" | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//g')"
          echo "                     Lien Petit Petit enfant $uri"
          if [[ "${html_ligne}" == *"dont"* ]]; then
@@ -193,7 +193,7 @@ cherche_enfant() {
          num_FAMC=0
          numFAMS=0
          log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant ] num_ID:[$num_ID] num_FAMC:[$num_FAMC] numFAMS:[$numFAMS]"
-         #         cherche_indi retID "$QUI_ENFANT" "$uri" "$ch_Parent" "$ch_Epoux" "$ch_Frere" "$ch_Enfant" "$num_ID" "$num_FAMC" "$numFAMS"
+         #         individu:search retID "$QUI_ENFANT" "$uri" "$ch_Parent" "$ch_Epoux" "$ch_Frere" "$ch_Enfant" "$num_ID" "$num_FAMC" "$numFAMS"
          echo "            Conjoint : $(echo "${html_ligne}" | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//g')"
          echo "               Lien Conjoint : $uri"
          TYPE_BLOC="ENFANT"

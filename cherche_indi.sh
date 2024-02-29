@@ -1,6 +1,6 @@
 #!/usr/local/bin/bash
 
-trace_cherche_indi="true"
+trace_individu_search="true"
 
 clean_fichier_temporaire() {
    return
@@ -120,7 +120,7 @@ individu:get() {
 }
 
 
-# fontion cherche_indi
+# fontion individu:search
 # Paramètre :
 #   $1 : KeyID pour retour de valeur à l'appelant
 #   $2 : Qui, tyep de recherche (PERE, MERE, EPOUSE)
@@ -130,7 +130,7 @@ individu:get() {
 #   $6 : Chercher les freres
 #   $7 : Chercher les enfants
 #   $8 : numero FAMS
-cherche_indi( ) {
+individu:search( ) {
    export tab="$tab   "
    local param="$2"
    local KeyID ficGedcom Qui URI URL getParent getEpoux getFrere getEnfant FAMS
@@ -152,26 +152,23 @@ cherche_indi( ) {
    echo "$KeyID" >"$fic_id"
    eval "${1}=\"$KeyID\"" 2>/dev/null
 
-   local ficFamille="${TMP_DIR}/FAM_$$_${FAMS}"
    local FAMS_SUIVANTE=0
 
    nbAppel=$((nbAppel + 1))
-#   local my_pid="${KeyID}_${RANDOM}_${RANDOM}"
-   local my_pid="${KeyID}"
    pre="${TMP_DIR}/gen_$(printf "%04d" "$KeyID")"
-   local fic_tmp_all="${pre}_all_page_$my_pid"
-   local fic_tmp="${pre}_result_$my_pid"
-   local fic_tmp_parent="${pre}_parent_$my_pid"
-   local fic_tmp_union="${pre}_union_$my_pid"
-   local fic_tmp_parent_pere="${pre}_parent_pere_$my_pid"
-   local fic_tmp_parent_mere="${pre}_parent_mere_$my_pid"
-   local fic_tmp_epoux="${pre}_parent_epoux_$my_pid"
-   local fic_tmp_divorce="${pre}_parent_divorce_$my_pid"
-   local fic_tmp_epoux_tmp="${pre}_epoux_tmp_$my_pid"
-   local fic_tmp_frere="${pre}_parent_frere_$my_pid"
-   local fic_tmp_enfant_tmp="${pre}_enfants_$my_pid"
-   local fic_tmp_source="${pre}_source_$my_pid"
-   local fic_tmp_note="${pre}_note_$my_pid"
+   local fic_tmp_all="${pre}_all_page"
+   local fic_tmp="${pre}_result"
+   local fic_tmp_parent="${pre}_parent"
+   local fic_tmp_union="${pre}_union"
+   local fic_tmp_parent_pere="${pre}_parent_pere"
+   local fic_tmp_parent_mere="${pre}_parent_mere"
+   local fic_tmp_epoux="${pre}_parent_epoux"
+   local fic_tmp_divorce="${pre}_parent_divorce"
+   local fic_tmp_epoux_tmp="${pre}_epoux_tmp"
+   local fic_tmp_frere="${pre}_parent_frere"
+   local fic_tmp_enfant_tmp="${pre}_enfants"
+   local fic_tmp_source="${pre}_source"
+   local fic_tmp_note="${pre}_note"
    local bj
    local bm
    local by
@@ -190,10 +187,10 @@ cherche_indi( ) {
 
    local nom prenom sex nbEpoux
    local tgNaissance tgDeces srcIndi srcNaissance srcUnion srcDeces noteIndi noteNaissance noteUnion noteDeces noteFamille
-   local findID retID retID_Pere retID_Mere
+   local findID retID KeyID_Pere KeyID_Mere
 
    local IdFct="$nbAppel/$KeyID/$FAMS"
-   log "DEB ($IdFct) my_pid:[$my_pid] URL:[$URL] Qui:[$Qui] KeyID:[$KeyID]"
+   log "DEB ($IdFct) URL:[$URL] Qui:[$Qui] KeyID:[$KeyID]"
 
    get_page_html "$URI" "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent"
    local retCode="$?"
@@ -279,10 +276,10 @@ cherche_indi( ) {
          local nbEnfantEpoux=$(sed -e '1,/<!--  Union/d' -e '/^<!--  Freres/,10000d' "$fic_tmp_all" | grep -v "=MOD_FAM" | sed -e 's/<a href=".*m=RL.*<img src="https/<img src="https/g' | grep -v "? ?" | grep "<a href=\"" | wc -l | bc)
          if [[ "$nbEnfantEpoux" -eq 0 ]]; then
             sed -e "1,/<!--  Union/d" -e "/^<!--  Freres/,10000d" "$fic_tmp_all" | grep -v "=MOD_FAM" | sed -e 's/<a href=".*m=RL.*<img src="https/<img src="https/g'> "$fic_tmp_enfant_tmp"
-            log "($IdFct): Pas d'époux:[$nbEpoux] et pas d'enfants, je supprime le fichier [$ficFamille]"
+            log "($IdFct): Pas d'époux:[$nbEpoux] et pas d'enfants, je supprime le fichier [$(fam:filename "$FAMS")]"
             fam:rm "$FAMS"
          else
-            log "($IdFct): Pad d'époux:[$nbEpoux] mais avec des enfants, je ne supprime pas le fichier [$ficFamille]"
+            log "($IdFct): Pad d'époux:[$nbEpoux] mais avec des enfants, je ne supprime pas le fichier [$(fam:filename "$FAMS")]"
          fi
       else
          local ref_epoux=0 ligne_precedente_marie_avec=0 numMariage=0 firstFAMS=0
@@ -336,12 +333,12 @@ cherche_indi( ) {
 
                # Pour l'épouse je n'increment pas le N°Famills (FAMS)
                log "($IdFct): Je recherche l'épouse de [$KeyID]  pour la famille FAMS[$FAMS]"
-               cherche_indi retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_EPOUSE}]?uri=[${lien_epoux}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS}]"
+               individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_EPOUSE}]?uri=[${lien_epoux}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS}]"
                local retCode="$?"
                if [[ "$retCode" -gt 299 ]]; then
                   continue
                fi
-               if [[ "$retCode" -eq 0 ]]; then
+               if [[ "$retCode" -eq 0 || "$retCode" -eq "$CODE_DEJA_TRAITE" ]]; then
                   # Ecriture dans fichier FAM, qui sera contatené dans le fichier ged à la fin
                   log "($IdFct): J'écris dans fichier FAMS[$FAMS] KeyID:[$KeyID]"
                   fam:write "fams=[$FAMS]?GEDCOM_mariage=[$date_mariage]?ville_mariage=[$ville_mariage]?GEDCOM_divorce=[$GEDCOM_divorce]?ville_divorce=[$villeDivorce]?note_divorce=[$noteDivorce]"
@@ -392,88 +389,79 @@ cherche_indi( ) {
          if [[ "$nom_pere" == *"? ?"* || "$nom_pere" == "" || "$nom_pere" == *"null null"* ]]; then
             log "($IdFct): Pas de père [$nom_pere] [$lien_pere] $nom $prenom" "$getParent" "0" "$getFrere"
             nb_parent=$((nb_parent-1))
-            retID_Pere=0
+            KeyID_Pere=0
          else
             log "($IdFct) Cherche le pere avec nouveau N° FAMS:[$FAMS_SUIVANTE]"
             local findID
-            cherche_indi retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PERE}]?uri=[${lien_pere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
+            individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PERE}]?uri=[${lien_pere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
             local retCode="$?"         
             [[ "$retCode" -gt 299 ]] && return "$retCode"
 
-            [[ "$retCode" -eq 1 ]] && retID_Pere=$(KeyID:get "$retID") || retID_Pere=$retID
-            log "($IdFct) I@$retID_Pere@ est le père de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
+            [[ "$retCode" -eq "$CODE_DEJA_TRAITE" ]] && KeyID_Pere=$(KeyID:get "$retID") || KeyID_Pere=$retID
+            log "($IdFct) I@$KeyID_Pere@ est le père de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
          fi
 
          # Recherche le Père
          if [[ "$nom_mere" == *"? ?"* || "$nom_mere" == "" || "$nom_mere" == *"null null"*  ]]; then
             log "($IdFct): Pas de mère pour $nom $prenom" "$getParent" "0" "$getFrere"
             nb_parent=$((nb_parent-1))
-            retID_Mere=0
+            KeyID_Mere=0
          else
             log "($IdFct) Cherche la mere avec nouveau N° FAMS :[$FAMS_SUIVANTE]"
             local findID
-            cherche_indi retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_MERE}]?uri=[${lien_mere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
+            individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_MERE}]?uri=[${lien_mere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
             local retCode="$?"
             [[ "$retCode" -gt 299 ]] && return "$retCode"
-            if [[ "$retCode" -eq 0 ]]; then
-               log "($IdFct) La mère est un nouveau individu retID:[$retID]"
-               retID_Mere=$retID
-            else
-               retID_Mere=$(KeyID:get "$retID")
-               log "($IdFct) La mère a déjà été traité avec retID_Mere:[$retID_Mere] ua lieu de retID:[$retID]"
-            fi
+            [[ "$retCode" -eq "$CODE_DEJA_TRAITE" ]] && KeyID_Mere=$(KeyID:get "$retID") || KeyID_Mere=$retID
             log "($IdFct) I@$retID@ (I@$retID@) est le la mère de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
          fi
 
          if [[ "$nb_parent" -ne 0 ]]; then
             local Old_FAMS_SUIVANTE="$FAMS_SUIVANTE"
-            if [[ "$retID_Mere" -eq 0 ]]; then
-               fam:whithout_spouse "$retID_Pere" "WIFE" FAMS_SUIVANTE
+            if [[ "$KeyID_Mere" -eq 0 ]]; then
+               fam:whithout_spouse "$KeyID_Pere" "WIFE" FAMS_SUIVANTE
                if [[ -z "$FAMS_SUIVANTE" ]]; then
-                  log "Famille avec père celibatire ($retID_Pere) de l'enfant ($retID) non trouvé, donc création"
+                  log "Famille avec père celibatire ($KeyID_Pere) de l'enfant ($retID) non trouvé, donc création"
                   FAMS_SUIVANTE=$(incFAM "$fic_fam")
-                  fam:write "fams=[$FAMS_SUIVANTE]?sex=[M]?KeyID=[$retID_Pere]?"
+                  fam:write "fams=[$FAMS_SUIVANTE]?sex=[M]?KeyID=[$KeyID_Pere]?"
                fi
                # Je créé une mère fictif
-               retID_Mere=$(KeyID:inc "$fic_id")
-               ged:write "$retID_Mere" "KeyID=[$retID_Mere]?nom=[?]?=prenom=[?]?sex=[F]"
-               fam:write "fams=[$FAMS_SUIVANTE]?sex=[F]?KeyID=[$retID_Mere]?"
+               KeyID_Mere=$(KeyID:inc "$fic_id")
+               ged:write "$KeyID_Mere" "KeyID=[$KeyID_Mere]?nom=[?]?=prenom=[?]?sex=[F]"
+               fam:write "fams=[$FAMS_SUIVANTE]?sex=[F]?KeyID=[$KeyID_Mere]?"
                log "La famille trouvé sans mère est Old_FAMS_SUIVANTE:[$Old_FAMS_SUIVANTE] FAMS_SUIVANTE:[$FAMS_SUIVANTE]"
-            elif  [[ "$retID_Pere" -eq 0 ]]; then
-               fam:whithout_spouse "$retID_Mere" "HUSB" FAMS_SUIVANTE
+            elif  [[ "$KeyID_Pere" -eq 0 ]]; then
+               fam:whithout_spouse "$KeyID_Mere" "HUSB" FAMS_SUIVANTE
                if [[ -z "$FAMS_SUIVANTE" ]]; then
-                  log "Famille avec mère celibatire ($retID_Mere) de l'enfant ($retID) non trouvé, donc création"
+                  log "Famille avec mère celibatire ($KeyID_Mere) de l'enfant ($retID) non trouvé, donc création"
                   FAMS_SUIVANTE=$(incFAM "$fic_fam")
-                  fam:write "fams=[$FAMS_SUIVANTE]?sex=[F]?KeyID=[$retID_Mere]?"
+                  fam:write "fams=[$FAMS_SUIVANTE]?sex=[F]?KeyID=[$KeyID_Mere]?"
                fi
                # Je créé une mère fictif
-               retID_Pere=$(KeyID:inc "$fic_id")
-               ged:write "$retID_Pere" "KeyID=[$retID_Pere]?nom=[?]?=prenom=[?]?sex=[F]"
-               fam:write "fams=[$FAMS_SUIVANTE]?sex=[M]?KeyID=[$retID_Pere]?"
+               KeyID_Pere=$(KeyID:inc "$fic_id")
+               ged:write "$KeyID_Pere" "KeyID=[$KeyID_Pere]?nom=[?]?=prenom=[?]?sex=[F]"
+               fam:write "fams=[$FAMS_SUIVANTE]?sex=[M]?KeyID=[$KeyID_Pere]?"
                log "La famille trouvé sans père est Old_FAMS_SUIVANTE:[$Old_FAMS_SUIVANTE] FAMS_SUIVANTE:[$FAMS_SUIVANTE]"
             fi
 
-            if [[ ! -f "${TMP_DIR}/FAM_$$_${FAMS_SUIVANTE}" ]]; then
-               log "($IdFct) Le fichier Famille ${TMP_DIR}/FAM_$$_${FAMS_SUIVANTE} n'existe pas"
+            if [[ ! -f "$(fam:filename "$FAMS")" ]]; then
+               log "($IdFct) Le fichier Famille $(fam:filename "$FAMS") n'existe pas"
                # Je suis la soeur de quelqu'un qui a déjà été traite, je recherche le fichier famille
-               fam:search "$retID_Pere" "$retID_Mere" FAMS_SUIVANTE
+               fam:search "$KeyID_Pere" "$KeyID_Mere" FAMS_SUIVANTE
                if [[ -n "$FAMS_SUIVANTE" ]]; then
-                  echo "  1 CHIL @I$KeyID@" >> "${TMP_DIR}/FAM_$$_${FAMS_SUIVANTE}"
-                  #echo "  1 FAMC @${FAMS_SUIVANTE}@" >> "${TMP_DIR}/FAM_$$_${FAMS_SUIVANTE}"
                   log "($IdFct) Je($KeyID) suis l'enfant de la famille ($FAMS_SUIVANTE)"
+                  fam:write "fams=[$FAMS_SUIVANTE]?child=[$KeyID]"
                   ged:write "$KeyID" "famc=[$FAMS_SUIVANTE]"
                else
-                  log "($IdFct) Le fichier Famille ${TMP_DIR}/FAM_$$_${FAMS_SUIVANTE} n'existe pas et pas de fichier famille trouver avec les parents [$retID_Pere] [$retID_Mere]"
+                  log "($IdFct) Le fichier Famille $(fam:filename "$FAMS") n'existe pas et pas de fichier famille trouver avec les parents [$KeyID_Pere] [$KeyID_Mere]"
                   quitter 1
                fi
             else
                # Je recherche le fichier Famille de l'enfant
                # Car si je suis l'enfant de la 2ème épouse, le $FAMS_SUIVANTE poine sur la 1ère épouse
-               fam:search "$retID_Pere" "$retID_Mere" FAMS_SUIVANTE
-               log "($IdFct) Ecriture de : je suis l'enfant($KeyID) de la famille Pere($retID_Pere) Mere($retID_Mere) dans fichier famille FAMS:[$FAMS_SUIVANTE]"
-               echo "  1 CHIL @I$KeyID@" >> "${TMP_DIR}/FAM_$$_${FAMS_SUIVANTE}"
-               #echo "  1 FAMC @${FAMS_SUIVANTE}@" >>"${TMP_DIR}/FAM_$$_${FAMS_SUIVANTE}"
-#               ged:write "${TMP_DIR}/FAM_$$_${FAMS_SUIVANTE}" "famc=[$FAMS_SUIVANTE]"
+               log "($IdFct) Ecriture de : je suis l'enfant($KeyID) de la famille Pere($KeyID_Pere) Mere($KeyID_Mere) dans fichier famille FAMS:[$FAMS_SUIVANTE]"
+               fam:search "$KeyID_Pere" "$KeyID_Mere" FAMS_SUIVANTE
+               fam:write "fams=[$FAMS_SUIVANTE]?child=[$KeyID]"
                ged:write "$KeyID" "famc=[$FAMS_SUIVANTE]"
             fi
          fi
@@ -495,8 +483,8 @@ cherche_indi( ) {
          if [[ "$html_ligne" == *" href=\""* ]]; then
             lien=$(echo $html_ligne | sed -e "s/<a href=\"/\n<a href=\"/g" | grep -v "&m=\l&t=|&i1=\|&i2=" | grep "&p=\|&n=" | sed -e 's/^.*href=\"//g' -e 's/".*$//g')
             FAMS_SUIVANTE=$(incFAM "$fic_fam")
-            ch_Parent=0; ch_Epoux=0; ch_Enfant=0
-            cherche_indi retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PERE}]?uri=[${lien}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${FAMS_SUIVANTE}]"
+#            ch_Parent=0; ch_Epoux=0; ch_Enfant=0
+            individu:search retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PERE}]?uri=[${lien}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${FAMS_SUIVANTE}]"
             local retCode="$?"
             [[ "$retCode" -gt 299 ]] && return "$retCode"
          fi
@@ -516,7 +504,9 @@ cherche_indi( ) {
       log "($IdFct): Je ne recherche pas les frères/soeurs"
    fi
 
+   rm "$fic_tmp_all" "$fic_tmp_parent" "$fic_tmp_union" "$fic_tmp_parent_pere" "$fic_tmp_parent_mere" "$fic_tmp_epoux" "$fic_tmp_divorce" "$fic_tmp_epoux_tmp" "$fic_tmp_frere" "$fic_tmp_enfant_tmp" "$fic_tmp_source" "$fic_tmp_note" 2>/dev/null 1>&2 || true
+
    clean_fichier_temporaire
-   log "FIN cherche_indi($IdFct): $my_pid $KeyID"
+   log "FIN individu:search($IdFct): $KeyID"
    export tab=$(echo $tab | sed -e 's/   //')
 }
