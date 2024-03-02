@@ -60,12 +60,12 @@ initialise_individu() {
 }
 
 init_cnx(){
-	log "init_cnx(): fic_config:[$fic_config]"
+	log "DEB fic_config:[$fic_config]"
    USER_GENEANET=$(grep user "${fic_config}" | sed -e 's/user.*=//g' -e 's/ //g' -e "s/'//g")
    COOKIES=$(grep COOKIES "${fic_config}" | sed -e 's/^.*COOKIES=//g' -e "s/'//g")
+	log "FIN"
 }
 
-#quitter 0
 
 recupFichierFamille() {
    local rep="$1"
@@ -99,6 +99,18 @@ usage() {
    echo "   [--no-enfant] : Ne recherche pas les enfant"
 }
 
+prerequis() {
+   lstBin="jq bc tr cat sed grep rm wc dirname basename uuidgen"
+   for bin in $lstBin; do
+      which "$bin" 2>/dev/null 1>&2
+      if [[ "$?" -ne 0 ]]; then
+         echo -e "usage: $(basename "$0")\n   $bin est necessaire, vous devez l'installer"
+         quitter 1
+      fi
+   done
+   return 0
+}
+
 main() {
    local uri=""
    local init_individu=false
@@ -115,6 +127,8 @@ main() {
    local fic_gedcom="${SCRIPT_DIR}/geneanet.ged"
    local optchar
 
+   echo "" > "/tmp/tab"
+   prerequis
    optspec=":u:ic:o:snvxhv-:"
    while getopts "$optspec" optchar; do
       echo "optchar:[$optchar]"
@@ -217,21 +231,23 @@ main() {
    fi
 
 
-   rm -rf ${TMP_DIR} 2>/dev/null 1>&2 || true
    mkdir ${TMP_DIR} 2>/dev/null 1>&2 || true
+   rm -rf "${TMP_DIR}/*" 2>/dev/null 1>&2 || true
 
    uri=$(echo "$url_param" | sed -e 's/https...gw.geneanet.org.//g' | sed -e "s/lang=../lang=${language}/g")
 
    if [[ ! -f "${fic_id}" ]]; then
       echo "0" > "${fic_id}"
    fi
+   touch "$fic_id_exist"
+   touch "$fic_id_link"
    echo "$numFAMS" > "${fic_fam}"
 
    init_cnx
    log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant] ch_Frere:[$ch_Frere] numFAMS:[$numFAMS]"
    ged:init "$fic_gedcom"
 
-   individu:search retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PERE}]?uri=[${uri}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${numFAMS}]"
+   individu:search retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PARENT}]?uri=[${uri}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${numFAMS}]"
    recupFichierFamille "$TMP_DIR" "$fic_gedcom"
    echo "Traitement terminé"
 }

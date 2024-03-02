@@ -48,7 +48,7 @@ supprime_bloc_div() {
 
 siMarie() {
    local _nbEpoux=0
-   _nbEpoux=$(sed -e "1,/<!--  Union/d"  -e "/^<!--  Freres/,10000d" "$1" | grep -E "^Marié|^Avec" | wc -l | bc)
+   _nbEpoux=$(sed -e "1,/<!--  Union/d"  -e "/^<!--  Freres/,10000d" "$1" | grep -E "^${LB_MARIE}|^${LB_RELATION}" | wc -l | bc)
    return $((_nbEpoux + 0))
 }
 
@@ -187,7 +187,8 @@ individu:search( ) {
 
    local nom prenom sex nbEpoux
    local tgNaissance tgDeces srcIndi srcNaissance srcUnion srcDeces noteIndi noteNaissance noteUnion noteDeces noteFamille
-   local findID retID KeyID_Pere KeyID_Mere
+   local findID retID KeyID_Pere KeyID_Mere nbEnfantEpoux
+   local ref_epoux=0 ligne_precedente_marie_avec=0 numMariage=0 firstFAMS=0 SansDate=0 epoux_trouve=0 epoux_trouve=0
 
    local IdFct="$nbAppel/$KeyID/$FAMS"
    log "DEB ($IdFct) URL:[$URL] Qui:[$Qui] KeyID:[$KeyID]"
@@ -252,17 +253,17 @@ individu:search( ) {
    ged:write "$KeyID" "date_naissance=[$GEDCOM_naissance]?ville_naissance=[$villeNaissance]?source_naissance=[$srcNaissance]?note_naissance=[$noteNaissance]"
    ged:write "$KeyID" "date_deces=[$GEDCOM_deces]?ville_deces=[$villeDeces]?source_deces=[$srcDeces]?note_deces=[$noteDeces]"
 
-   if [[ "${Qui}" == "${QUI_PERE}" ]]; then      
+   if [[ "${Qui}" == "${QUI_PARENT}" ]]; then      
       if ! siMarie "$fic_tmp_all"; then
          ged:write "$KeyID" "fams=[$FAMS]"
       fi
-   elif [[ "${Qui}" == "${QUI_EPOUSE}" ]]; then
+   elif [[ "${Qui}" == "${QUI_CONJOINT}" ]]; then
       # Je suis l'épouse
       ged:write "$KeyID" "fams=[$FAMS]"
    fi
 
    # recherche épouse 
-   if [[ "$getEpoux" == "1" ]]; then
+   if [[ "$getEpoux" == "1" && "${Qui}" != "${QUI_CONJOINT}" ]]; then
       log "($IdFct): Bloc recherche des époux"
       #      echo "Recherche époux/épouse"
       sed -e "1,/<!--  Union/d" -e "/^<!--  Freres/,10000d" "$fic_tmp_all" > "$fic_tmp_epoux_tmp"
@@ -273,7 +274,7 @@ individu:search( ) {
       # Si pas d'époux, je supprime le fichier FAMS
       if [[ "$nbEpoux" -eq 0 ]]; then
          # Je regarde si il a des enfants dans ce cas, je supprime pas le fichier seulement si il n'y as pas d'enfant d'un conjoint inconnu
-         local nbEnfantEpoux=$(sed -e '1,/<!--  Union/d' -e '/^<!--  Freres/,10000d' "$fic_tmp_all" | grep -v "=MOD_FAM" | sed -e 's/<a href=".*m=RL.*<img src="https/<img src="https/g' | grep -v "? ?" | grep "<a href=\"" | wc -l | bc)
+         nbEnfantEpoux=$(sed -e '1,/<!--  Union/d' -e '/^<!--  Freres/,10000d' "$fic_tmp_all" | grep -v "=MOD_FAM" | sed -e 's/<a href=".*m=RL.*<img src="https/<img src="https/g' | grep -v "? ?" | grep "<a href=\"" | wc -l | bc)
          if [[ "$nbEnfantEpoux" -eq 0 ]]; then
             sed -e "1,/<!--  Union/d" -e "/^<!--  Freres/,10000d" "$fic_tmp_all" | grep -v "=MOD_FAM" | sed -e 's/<a href=".*m=RL.*<img src="https/<img src="https/g'> "$fic_tmp_enfant_tmp"
             log "($IdFct): Pas d'époux:[$nbEpoux] et pas d'enfants, je supprime le fichier [$(fam:filename "$FAMS")]"
@@ -282,15 +283,13 @@ individu:search( ) {
             log "($IdFct): Pad d'époux:[$nbEpoux] mais avec des enfants, je ne supprime pas le fichier [$(fam:filename "$FAMS")]"
          fi
       else
-         local ref_epoux=0 ligne_precedente_marie_avec=0 numMariage=0 firstFAMS=0
-         local SansDate=0
          while IFS='' read -r ligne_html; do
             ### log "($IdFct) Lecture de la ligne [$ligne_html]"
-            local epoux_trouve=$(echo $ligne_html | grep -E "^$LB_MARIE|^$LB_RELATION|^$LB_FIANCE|^$LB_MARIE_AVEC" | wc -l | bc)
+            epoux_trouve=$(echo $ligne_html | grep -E "^$LB_MARIE|^$LB_RELATION|^$LB_FIANCE|^$LB_MARIE_AVEC" | wc -l | bc)
             SansDate=$(echo $ligne_html | grep -E "^${LB_MARIE}${LB_MARIE_AVEC}" | wc -l | bc)
-            local ref_epoux=$(echo "$ligne_html" | grep -Ei "${LB_MARIE_AVEC}.*<a href=" | wc -l | bc)
+            ref_epoux=$(echo "$ligne_html" | grep -Ei "${LB_MARIE_AVEC}.*<a href=" | wc -l | bc)
 
-            ### log "($IdFct) epoux_trouve:[$epoux_trouve] SansDate:[$SansDate] ref_epoux:[$ref_epoux]"
+            log "($IdFct) epoux_trouve:[$epoux_trouve] SansDate:[$SansDate] ref_epoux:[$ref_epoux]"
 
             if [[ "$epoux_trouve" -eq 1 && "$SansDate" -eq 0  ]]; then
                # echo "($IdFct): $ligne_html"
@@ -333,7 +332,7 @@ individu:search( ) {
 
                # Pour l'épouse je n'increment pas le N°Famills (FAMS)
                log "($IdFct): Je recherche l'épouse de [$KeyID]  pour la famille FAMS[$FAMS]"
-               individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_EPOUSE}]?uri=[${lien_epoux}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS}]"
+               individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_CONJOINT}]?uri=[${lien_epoux}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS}]"
                local retCode="$?"
                if [[ "$retCode" -gt 299 ]]; then
                   continue
@@ -393,7 +392,7 @@ individu:search( ) {
          else
             log "($IdFct) Cherche le pere avec nouveau N° FAMS:[$FAMS_SUIVANTE]"
             local findID
-            individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PERE}]?uri=[${lien_pere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
+            individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PARENT}]?uri=[${lien_pere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
             local retCode="$?"         
             [[ "$retCode" -gt 299 ]] && return "$retCode"
 
@@ -453,16 +452,20 @@ individu:search( ) {
                   fam:write "fams=[$FAMS_SUIVANTE]?child=[$KeyID]"
                   ged:write "$KeyID" "famc=[$FAMS_SUIVANTE]"
                else
-                  log "($IdFct) Le fichier Famille $(fam:filename "$FAMS") n'existe pas et pas de fichier famille trouver avec les parents [$KeyID_Pere] [$KeyID_Mere]"
-                  quitter 1
+                  error "($IdFct) Le fichier Famille $(fam:filename "$FAMS") n'existe pas et pas de fichier famille trouver avec les parents [$KeyID_Pere] [$KeyID_Mere]"
+                  return 1
                fi
             else
                # Je recherche le fichier Famille de l'enfant
                # Car si je suis l'enfant de la 2ème épouse, le $FAMS_SUIVANTE poine sur la 1ère épouse
                log "($IdFct) Ecriture de : je suis l'enfant($KeyID) de la famille Pere($KeyID_Pere) Mere($KeyID_Mere) dans fichier famille FAMS:[$FAMS_SUIVANTE]"
                fam:search "$KeyID_Pere" "$KeyID_Mere" FAMS_SUIVANTE
-               fam:write "fams=[$FAMS_SUIVANTE]?child=[$KeyID]"
-               ged:write "$KeyID" "famc=[$FAMS_SUIVANTE]"
+               if [[ -z "$FAMS_SUIVANTE" ]]; then
+                  log "Enfant sans fichier famille Enfant:[$KeyID] Père:[$KeyID_Pere] Mère:[$KeyID_Mere]" >&2
+               else
+                  fam:write "fams=[$FAMS_SUIVANTE]?child=[$KeyID]"
+                  ged:write "$KeyID" "famc=[$FAMS_SUIVANTE]"
+               fi
             fi
          fi
       else
@@ -484,7 +487,7 @@ individu:search( ) {
             lien=$(echo $html_ligne | sed -e "s/<a href=\"/\n<a href=\"/g" | grep -v "&m=\l&t=|&i1=\|&i2=" | grep "&p=\|&n=" | sed -e 's/^.*href=\"//g' -e 's/".*$//g')
             FAMS_SUIVANTE=$(incFAM "$fic_fam")
 #            ch_Parent=0; ch_Epoux=0; ch_Enfant=0
-            individu:search retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PERE}]?uri=[${lien}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${FAMS_SUIVANTE}]"
+            individu:search retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PARENT}]?uri=[${lien}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${FAMS_SUIVANTE}]"
             local retCode="$?"
             [[ "$retCode" -gt 299 ]] && return "$retCode"
          fi

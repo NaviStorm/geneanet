@@ -98,8 +98,8 @@ fam:write() {
    nChild=$(echo "$param" | grep "child=" | sed -e 's/^.*child=\[//' -e 's/\].*$//g' )
 
    if [[ -z "$nFAMS" ]]; then
-      erreur " Le numero de famille est obligatoire"
-      quitter 1
+      error " Le numero de famille est obligatoire"
+      return 1
    fi
    ficCOM=$(fam:filename "$nFAMS")
 
@@ -120,15 +120,15 @@ fam:write() {
 
       nbEpoux=$(grep "HUSB\|WIFE\|INCO" "$ficCOM" | wc -l | bc | wc -l)
       if [[ "$nbEpoux" -eq 2 ]]; then
-         erreur "Il y a deja 2 conjoints dans le fichier Famille [$nFAMS]"
-         quitter 1
+         error "Il y a deja 2 conjoints dans le fichier Famille [$nFAMS]"
+         return 1
       fi
 
       existeDeja=$(grep "$labelTypeEpoux" "$ficCOM" | wc -l | bc)
       log "Recherche $labelTypeEpoux dans fichier famille existeDeja:[$existeDeja]"
       if [[ "$existeDeja" -eq 2 ]]; then
-         erreur "Il y a deja $labelTypeEpoux $nom $prenom (@I$KeyID@) dans le fichier Famille [$nFAMS]"
-         quitter 1
+         error "Il y a deja $labelTypeEpoux $nom $prenom (@I$KeyID@) dans le fichier Famille [$nFAMS]"
+         return 1
       else
          log "Ecriture dans fichier nFAMS ${nFAMS} $labelTypeEpoux Qui:[$Qui]"
          echo "  1 $labelTypeEpoux" >> "$ficCOM"
