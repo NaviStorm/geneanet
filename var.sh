@@ -14,16 +14,10 @@ nbAppel=0
 url="https://gw.geneanet.org"
 
 TMP_DIR="/tmp/geneanet"
-TMP_DIR="/Volumes/DisqueRAM/geneanet"
-mkdir -p "$TMP_DIR" >/dev/null 1>&2
 
-fic_id="${TMP_DIR}/KeyID"
-fic_id_exist="${fic_id}_exist"
-fic_id_link="${fic_id}_link"
-fic_fam="${TMP_DIR}/FamID"
-
-dir_cache="${HOME}/geneanet_cache"
-fic_cache="${dir_cache}/cache"
+DIR_CACHE="${HOME}/geneanet_cache"
+FIC_CACHE="${DIR_CACHE}/cache"
+declare -i OPT_CACHE=1
 
 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
 user_agent="Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"
@@ -32,12 +26,11 @@ user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 15_0_2 like Mac OS X) AppleWebKit
 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0"
 TRACE=false
+DEBUG=false
 QUI_PARENT="PARENT"
-QUI_CONJOINT="PERE"
-QUI_PARENT="PERE"
-QUI_CONJOINT="EPOUSE"
+QUI_CONJOINT="CONJOINT"
 QUI_ENFANT="ENFANT"
-QUI_MERE="MERE"
+QUI_FRERE="FRERE"
 TAB_LOG=""
 tab=""
 CHRONO="false"

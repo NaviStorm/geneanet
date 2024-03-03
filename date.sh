@@ -1,4 +1,4 @@
-trace_date="false"
+trace_date="true"
 
 mois_court() {
    local local_mois_court_dm=""
@@ -172,7 +172,7 @@ determine_lable_date() {
 
 
 trouver_date() {
-   trace_trouver_date="false"
+   trace_trouver_date="true"
    local fic="$1"
    local dt_label_date="$2"
    local dt_fic_tmp="${TMP_DIR}/gen_date_${RANDOM}${RANDOM}"
@@ -189,7 +189,7 @@ trouver_date() {
 
 
    log "fic:[$fic] dt_label_date:[$dt_label_date]"
-   sed -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' -e 's/<em>//g' -e 's/<\/em>//g' "$fic" | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
+   sed -e "s/<em>//g" -e "s/<\/em>//g" -e 's/\//CHARSLASH/g' "$fic" | sed -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
    nbLigne=$(cat $dt_fic_tmp | wc -l | bc)
       log "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
    if [[ "$nbLigne" -ne 0 ]]; then
@@ -228,16 +228,17 @@ trouver_date() {
             dt_naissance=$(echo "  2  $dt_tag $dt_jour $dt_mois $dt_annee" | tr -s '[:space:]')
          fi
          if [[ $(grep " - " "$dt_fic_tmp" | wc -l | bc) -eq 1 ]]; then
-            dt_ville=$(grep "$dt_label_date " "$dt_fic_tmp" | sed -e 's/^.* - //g' -e 's/<\/li>.*$//g' -e "s/^ *//g")
+            dt_ville=$(grep "$dt_label_date " "$dt_fic_tmp" | sed -e 's/^.* - //g' -e 's/<\/li>.*$//g' -e "s/^ *//g" -e "s/CHARSLASH/\//g")
          else
             dt_ville=""
          fi
       else
-         dt_ville=$(sed -e "s/^.*${dt_label_date},//g" -e "s/^.*${dt_label_date} - //g" -e "s/^ *//g" "$dt_fic_tmp")
+         dt_ville=$(sed -e "s/^.*${dt_label_date},//g" -e "s/^.*${dt_label_date} - //g" -e "s/^ *//g" "$dt_fic_tmp" -e "s/CHARSLASH/\//g")
       fi
       log "trouver_date() dt_naissance:[$dt_naissance] dt_tag[$dt_tag] dt_label_date:[$dt_label_date] dt_ville:[$dt_ville]"
    fi
 
+   rm $dt_fic_tmp
    eval "$3=\"$dt_naissance\""
    eval "$4=\"$dt_tag\""
    eval "$5=\"$dt_jour\""
@@ -254,5 +255,5 @@ trouver_date() {
 }
 
 main() {
-   trouver_date null null null null null null null null null null
+   local i=0
 }

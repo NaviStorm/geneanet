@@ -1,6 +1,6 @@
 #!/usr/local/bin/bash
 
-trace_get_page_html="false"
+trace_get_page_html="true"
 
 init_label() {
    local init_label_type_sex=$1
@@ -47,24 +47,6 @@ cache:uri_to_link() {
 }
 
 
-cache:get(){
-   local _uri="$1"
-   local _fic="$2"
-   local _link="" NbFicCache=0
-   local _ficCache=""
-
-   _link=$(cache:uri_to_link "$_uri")
-   NbFicCache=$(grep "${_link}" "${fic_cache}" | wc -l | bc)
-   [[ "$NbFicCache" -ne 1 ]] && return 1
-   _ficCache=$(grep "\[${_link}\]" "${fic_cache}" | sed -e 's/^.*f:\[//g' -e 's/\].*$//g' -e "s/\$HOME/$(echo $HOME|sed -e 's/\//\\\//g')/g")
-   cp "$_ficCache" "$_fic"
-   if [[ "$?" -ne 0 ]]; then
-      return 1
-   fi
-   return 0
-}
-
-
 cache:filename(){
    local _uri="$1"
    local _fic="$2"
@@ -72,9 +54,9 @@ cache:filename(){
    local _ficCache=""
 
    _link=$(cache:uri_to_link "$_uri")
-   NbFicCache=$(grep "\[${_link}\]" "${fic_cache}" | wc -l | bc)
+   NbFicCache=$(grep "\[${_link}\]" "${FIC_CACHE}" | wc -l | bc)
    [[ "$NbFicCache" -ne 1 ]] && return 1
-   _ficCache=$(grep "${_link}" "${fic_cache}" | sed -e 's/^.*f:\[//g' -e 's/\].*$//g' -e "s/\$HOME/$(echo $HOME|sed -e 's/\//\\\//g')/g")
+   _ficCache=$(grep "\[${_link}\]" "${FIC_CACHE}" | sed -e 's/^.*f:\[//g' -e 's/\].*$//g' -e "s/\$HOME/$(echo $HOME|sed -e 's/\//\\\//g')/g")
    echo "$_ficCache"
    return 0
 }
@@ -87,16 +69,34 @@ cache:exist() {
    local _ficCache=""
 
    _link=$(cache:uri_to_link "$_uri")
-   NbFicCache=$(grep "\[${_link}\]" "${fic_cache}" | wc -l | bc)
+   NbFicCache=$(grep "\[${_link}\]" "${FIC_CACHE}" | wc -l | bc)
 
    if [[ "$NbFicCache" -eq 1 ]]; then
-      _ficCache=$(grep "\[${_link}\]" "${fic_cache}" | sed -e 's/^.*f:\[//g' -e 's/\].*$//g' -e "s/\$HOME/$(echo $HOME|sed -e 's/\//\\\//g')/g")
+      _ficCache=$(grep "\[${_link}\]" "${FIC_CACHE}" | sed -e 's/^.*f:\[//g' -e 's/\].*$//g' -e "s/\$HOME/$(echo "$HOME"|sed -e 's/\//\\\//g')/g")
       sha256sum "$_ficCache" | sed -e 's/ .*$//g'
       return 1
    else
       echo ""
       return 0
    fi
+}
+
+
+cache:get(){
+   local _uri="$1"
+   local _fic="$2"
+   local _ficCache="" sha256sum=""
+
+   sha256sum=$(cache:exist "$_uri")
+   retCode="$?"
+#   [[ "$retCode" -eq 0 ]] && log "$_uri n'est pas en cache" || log "$_uri est en cache"
+   [[ "$retCode" -eq 0 ]] && return 1
+   _ficCache=$(cache:filename "$_uri")
+#   log "nom fichier en cache [$_ficCache]"
+
+   cp "$_ficCache" "$_fic"
+   retCode="$?"
+   return "$retCode"
 }
 
 
@@ -107,25 +107,36 @@ cache:put(){
    local force="$3"
    local _link=""
    local _ficCache=$(uuidgen)
+   local retCode=0
 
    local sha256_cache="" sha256_fic="" 
    
-   nameFic="${dir_cache}/$(uuidgen | tr '[:upper:]' '[:lower:]')"
+   nameFic="${DIR_CACHE}/$(uuidgen | tr '[:upper:]' '[:lower:]')"
    sha256_cache=$(cache:exist "${_uri}")
-   [[ "$?" -eq 1 && "$force" == "false" ]] && return 0
+   retCode="$?"
+   [[ "$retCode" -eq 1 ]] && log "Cette page [${_uri}] est déjà dans le cache" || log "Cette page [${_uri}] n'est pas dans le cache"
+   [[ "$retCode" -eq 1 && "$force" == "false" ]] && return 0
 
    if [[ -n "$sha256_cache" ]]; then
+      log "Page dans le cache, je vérifie le sha256sum"
       sha256_fic=$(sha256sum "$_fic" | sed -e 's/ .*$//g')
-      [[ "$sha256_cache" == "$sha256_fic" ]] && return 0
+      if [[ "$sha256_cache" == "$sha256_fic" ]]; then
+         log "[$_fic] et identique au cache, je ne fais rien"
+         return 0
+      fi
       log "sha256_cache:[$sha256_cache] sha256_fic:[$sha256_fic]"
-#      cp "${_fic}" "$nameFic" 2>/dev/null 1>&2
-      cp "${_fic}" "${dir_cache}/${_ficCache}" 2>/dev/null 1>&2
-      [[ "$?" -ne 0 ]] && return 1
+      cp "${_fic}" "$nameFic" 2>/dev/null 1>&2
+      retCode="$?"
+      [[ "$retCode" -ne 0 ]] && log "Mise a jour du cache" || log "Erreur de copie, pas de mise a jour du cache"
    else
+      log "Pas dans le cache, je copie [$_fic] dans [$nameFic]"
       cp "${_fic}" "${nameFic}" 2>/dev/null 1>&2
-      if [[ "$?" -eq 0 ]]; then
+      retCode="$?"
+      [[ "$retCode" -eq 0 ]] && log "Pas d'erreur de copie" || log "Erreur lors de la copie de $_fic"
+      if [[ "$retCode" -eq 0 ]]; then
          _link=$(cache:uri_to_link "$_uri")
-         echo "l:[$_link] f:[$nameFic]" >> "${fic_cache}"
+         echo "l:[$_link] f:[$nameFic]" >> "${FIC_CACHE}"
+         return 0
       else
          return 1
       fi
@@ -167,10 +178,12 @@ html:get() {
          log "   Erreur curl, je tente encore apres une pause de 5 sec retCodeCurl:[$retCodeCurl] retCodeServer:[$retCodeServer]"
          sleep 5
       else
-         log "Mise en cache de la page"
-         cache:put "$uri" "$fic_tmp_all" "false"
-         if [[ "$?" -ne 0 ]]; then 
-            log "Retour curl:put, erreur lors de la mise en cache de la page"
+         if [[ "$OPT_CACHE" -eq 1 ]]; then
+            log "Mise en cache de la page [$uri]"
+            cache:put "$uri" "$fic_tmp_all" "false"
+            if [[ "$?" -ne 0 ]]; then 
+               log "Retour curl:put, erreur lors de la mise en cache de la page"
+            fi
          fi
          tab:dec
          return 0
@@ -182,33 +195,28 @@ html:get() {
 
 get_page_html() {
    trace_get_page_html="true"
-   local uri=$1
+   local _uri=$1 uri=""
    local fic_tmp_all="$2"
    local fic_tmp="$3"
    local fic_tmp_parent="$4"
    local nbRedirect=0 retCodeCurl=0 retCodeServer=0
 
-   uri="${1//lang=../lang=${language}}"
+   _uri="${1//lang=../lang=${language}}"
    
-   log "DEB uri:[$uri] fic_tmp_all:[$fic_tmp_all] fic_tmp:[$fic_tmp] fic_tmp_parent:[$fic_tmp_parent]"
+   log "DEB uri:[${_uri}] fic_tmp_all:[$fic_tmp_all] fic_tmp:[$fic_tmp] fic_tmp_parent:[$fic_tmp_parent]"
    touch "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent"
-   uri=$(echo $uri | sed -e 's/&type=tree//g' | sed -e 's/&type=fiche//g')
+   uri=$(echo "${_uri}" | sed -e 's/&type=tree//g' | sed -e 's/&type=fiche//g')
 
-   local optCache=1
-   cache:exist "$uri" 2>/dev/null 1>&2
-   enCache="$?"
-   if [[ "$optCache" -eq 0 || "$enCache" -eq 0 ]]; then
-      log "optCache:[$optCache] enCache:[$enCache]"
+   if [[ "$OPT_CACHE" -eq 0 ]]; then
       html:get "$uri" "$fic_tmp_all"
       if [[ "$?" -ne 0 ]]; then
          tab:dec
          return 1
       fi
    else
-      log "En Cache : [$uri]"
       cache:get "$uri" "$fic_tmp_all"
       if [[ "$?" -ne 0 ]]; then 
-         log "Retour curl:get, cette page n'est pas en cache"
+         log "Cette page [$uri] n'est pas en cache"
          html:get "$uri" "$fic_tmp_all"
          if [[ "$?" -ne 0 ]]; then
             tab:dec

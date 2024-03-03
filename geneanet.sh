@@ -86,8 +86,9 @@ usage() {
    echo "   -u URL        : Lien url ver la famille a récupérer"
    echo "   -i            : Initialisation du N° de l'individu"
    echo "   -s            : Initialisation du N° de la famille"
-   echo "   -c            : mode verbose"
+   echo "   -c            : Fichier configuration"
    echo "   -v            : mode verbose"
+   echo "   -d            : mode debug"
    echo "   -x            : mode verbose (timestampt)"
    echo "   -o            : fichier out"
 
@@ -111,6 +112,28 @@ prerequis() {
    return 0
 }
 
+
+auth_tmp_dir() {
+   local _tmp="$1"
+   local _fic="$_tmp/testFile"
+   local retCode=0
+
+   mkdir -p "$_tmp" 2>/dev/null 1>&2
+   touch "$_fic"
+   retCode="$?"
+   [[ "$retCode" -ne 0 ]] && return 1
+
+   rm "$_fic" 2>/dev/null 1>&2
+   TMP_DIR="$_tmp"
+
+   fic_id="${TMP_DIR}/KeyID"
+   fic_id_exist="${fic_id}_exist"
+   fic_id_link="${fic_id}_link"
+   fic_fam="${TMP_DIR}/FamID"
+   return 0
+}
+
+
 main() {
    local uri=""
    local init_individu=false
@@ -129,16 +152,34 @@ main() {
 
    echo "" > "/tmp/tab"
    prerequis
-   optspec=":u:ic:o:snvxhv-:"
+   optspec=":u:ic:o:st:nvxhv-:"
    while getopts "$optspec" optchar; do
-      echo "optchar:[$optchar]"
       case "${optchar}" in
          -)
             case "${OPTARG}" in
-               url)
-                  url_param="${!OPTIND}"; OPTIND=$(( OPTIND + 1 ))
-                  # echo "Option: '--${OPTARG}', url_param: '${url_param}'" >&2;
-                  ;;            
+               cache)
+                  OPT_CACHE=1
+                  ;;
+               no-cache)
+                  OPT_CACHE=0
+                  ;;
+               cache=*)
+                  DIR_CACHE=${OPTARG#*=}
+                  FIC_CACHE="${DIR_CACHE}/cache"
+                  mkdir -p "$DIR_CACHE" 2>/dev/null 1>&2
+                  touch "$FIC_CACHE"
+                  if [[ "$?" -ne 0 ]]; then
+                     echo -e "usage: $(basename "$0")\n   Erreur lors de l'accès à $DIR_CACHE"
+                     quitter 1
+                  fi
+                  ;;
+               tmp)
+                  TMP_DIR="${!OPTIND}"; OPTIND=$(( OPTIND + 1 ))
+                  ;;
+               tmp=*)
+                  TMP_DIR=${OPTARG#*=}
+                  opt=${OPTARG%=$val}
+                  ;;
                no-parent)
                   ch_Parent="0"
                   ;;
@@ -179,14 +220,14 @@ main() {
             fic_gedcom="${OPTARG}"
             touch "$fic_gedcom"
             ;;
+         d)
+            DEBUG=true
+            ;;
          x)
-            TRACE=true
             CHRONO=true
-            # echo "Parsing option: '-${optchar}'" >&2
             ;;
          v)
             TRACE=true
-            # echo "Parsing option: '-${optchar}'" >&2
             ;;
          c)
             fic_config="$OPTARG"
@@ -212,6 +253,9 @@ main() {
             echo "ICI url_param:[$url_param]"
             # echo "Parsing option: '-${optchar}' $OPTARG" >&2
             ;;
+         t)
+            TMP_DIR="$OPTARG"
+            ;;
          *)
             if [ "$OPTERR" != 1 ] || [ "${optspec:0:1}" = ":" ]; then
                echo "Non-option argument: '-${OPTARG}'" >&2
@@ -222,6 +266,13 @@ main() {
       esac
    done
 
+   auth_tmp_dir "$TMP_DIR"
+   if [[ "$?" -ne 0 ]]; then
+      echo "usage: $(basename "$0")"
+      echo "    Erreur d'accès sur [$OPTARG]"
+      quitter 1
+   fi
+
    if [[ "$url_param" == "" ]]; then
       echo "$(basename "$0") : -u URL Obligatoire"
       quitter 1
@@ -231,8 +282,8 @@ main() {
    fi
 
 
+   rm -rf "${TMP_DIR}" 2>/dev/null 1>&2 || true
    mkdir ${TMP_DIR} 2>/dev/null 1>&2 || true
-   rm -rf "${TMP_DIR}/*" 2>/dev/null 1>&2 || true
 
    uri=$(echo "$url_param" | sed -e 's/https...gw.geneanet.org.//g' | sed -e "s/lang=../lang=${language}/g")
 

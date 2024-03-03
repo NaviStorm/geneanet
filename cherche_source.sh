@@ -40,7 +40,7 @@ cherche_source() {
             if [[ "$fin_ligne" -eq 1 ]]; then
                 log "ligne_html:[$ligne_html] section:[$section]"
                 ref=$(echo $ligne_html | sed -e "s/^.*$section: //g" -e 's/<\/li>.*$//g')
-                [[ "$?" -ne 0 ]] && quitter 1
+                [[ "$?" -ne 0 ]] && return 1
                 edit_source "$ref" "$section" _srcIndi _srcNaissance _srcUnion _srcDeces
                 x_ligne="false"
             else

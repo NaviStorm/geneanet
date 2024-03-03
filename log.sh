@@ -39,9 +39,36 @@ log () {
    fi
 }
 
+debug() {
+   local tab=$(tab:get)
+   local idFct=""
+   local chrono
+   if [[ "$DEBUG" == "true" ]]; then
+      [[ "$CHRONO" == "true" ]] && chrono=$(date "+%d/%m/%Y %T ")
+      local file=${BASH_SOURCE[1]##*/} func=${FUNCNAME[1]} line=${BASH_LINENO[0]} lineAppelant=${BASH_LINENO[1]}
+      TRACE_SCRIPT=$(echo "TRACE_${file}" | tr A-Z a-z | sed -e "s/.sh$//g")
+      TRACE_FUNCTION=$(echo "TRACE_${func}" | tr A-Z a-z  | sed -e 's/:/_/g')
+      [[ "${!TRACE_FUNCTION}" == "false" ]] && return 0
+      [[ "${!TRACE_SCRIPT}" == "false" ]] && return 0
+      idFct=$(printf "%50s" "${chrono}${file##*/}:$lineAppelant:$func:$line")
+      idFct=$(printf "%50s" "${chrono}[${FUNCNAME[2]}:$lineAppelant][$func:$line]")
+      echo "$idFct: $tab$*"
+   fi
+}
+
+
 error() {
-   log "$@" >&2
-   quitter 1
+   log "FATAL ERROR $@" >&2
+#   log "$@" >&2
+#   echo;echo;echo
+#   set -o posix ; set 
+#   echo;echo;echo
+#   tab=""
+#   for ((i=${#BASH_SOURCE[@]}-1; i>=0; i--)); do
+#      echo "${tab}[${BASH_SOURCE[$i]}] : [${FUNCNAME[$i]}] : [${BASH_LINENO[$i]}]"
+#      tab="$tab   "
+#   done
+   return 1
 }
 
 
