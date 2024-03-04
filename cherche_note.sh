@@ -1,5 +1,3 @@
-#!/bin/bash
-
 trace_cherche_note="false"
 
 edit_note() {

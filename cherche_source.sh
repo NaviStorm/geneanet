@@ -1,5 +1,3 @@
-#!/bin/bash
-
 trace_cherche_source="false"
 
 edit_source() {

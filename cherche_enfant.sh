@@ -1,5 +1,3 @@
-#!/bin/bash
-
 cherche_enfant() {
    local param="$1"
    local ficGedcom=$(echo "$param" | grep -i "ficGedcom=" | sed -e 's/^.*ficGedcom=\[//i' -e 's/\].*$//g')

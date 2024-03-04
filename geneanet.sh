@@ -1,5 +1,6 @@
 #!/usr/local/bin/bash
 
+
 #### ./geneanet.sh "https://gw.geneanet.org/egarciat?lang=fr&iz=0&p=maria+magdalena+rita&n=amat+mira" 24 ""
 # DATE
 #    ABT ==> Vers
@@ -50,6 +51,7 @@ source "${SCRIPT_DIR}/date.sh"
 source "${SCRIPT_DIR}/cherche_indi.sh"
 source "${SCRIPT_DIR}/cherche_enfant.sh"
 source "${SCRIPT_DIR}/get_page_html.sh"
+source "${SCRIPT_DIR}/cache.sh"
 source "${SCRIPT_DIR}/cherche_source.sh"
 source "${SCRIPT_DIR}/cherche_note.sh"
 source "${SCRIPT_DIR}/write_indi.sh"
@@ -134,6 +136,24 @@ auth_tmp_dir() {
 }
 
 
+save() {
+   local param="$1"
+   local _fic _tmp_dir _fic_ged _url
+
+   log "param:[$param]"
+   _fic=$(getParam "fic" "$param")
+   _tmp_dir=$(getParam "tmp" "$param")
+   _fic_ged=$(getParam "ged" "$param")
+   _url=$(getParam "url" "$param")
+   log "_fic:[$_fic] _tmp_dir:[$_tmp_dir] _fic_ged:[$_fic_ged] _url:[$_url]"
+   echo "fic=[$bckOpt]?tmp=[$TMP_DIR]?ged=[$fic_gedcom]?url=[$url_param]" > "${_fic}"
+}
+
+instance() {
+   :
+}
+
+
 main() {
    local uri=""
    local init_individu=false
@@ -157,6 +177,18 @@ main() {
       case "${optchar}" in
          -)
             case "${OPTARG}" in
+               asc)
+                  optNbAsc="${!OPTIND}"; OPTIND=$(( OPTIND + 1 ))
+                  ;;
+               asc=*)
+                  optNbAsc=${OPTARG#*=}
+                  ;;
+               desc)
+                  optNbDesc="${!OPTIND}"; OPTIND=$(( OPTIND + 1 ))
+                  ;;
+               desc=*)
+                  optNbDesc=${OPTARG#*=}
+                  ;;
                cache)
                   OPT_CACHE=1
                   ;;
@@ -218,7 +250,6 @@ main() {
             ;;
          o)
             fic_gedcom="${OPTARG}"
-            touch "$fic_gedcom"
             ;;
          d)
             DEBUG=true
@@ -293,11 +324,16 @@ main() {
    touch "$fic_id_exist"
    touch "$fic_id_link"
    echo "$numFAMS" > "${fic_fam}"
+   touch "$fic_gedcom"
 
    init_cnx
    log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant] ch_Frere:[$ch_Frere] numFAMS:[$numFAMS]"
    ged:init "$fic_gedcom"
 
+#   bckOpt="/tmp/.gen.lock.$$"
+#   save "fic=[$bckOpt]?tmp=[$TMP_DIR]?ged=[$fic_gedcom]?url=[$url_param]"
+#   instance
+   log "NbAsc:[$nbAsc] optNbAsc:[$optNbAsc] // NbDesc:[$nbDesc] optNbDesc:[$optNbDesc] // getParent:[$getParent] getEnfant:[$getEnfant]"
    individu:search retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PARENT}]?uri=[${uri}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${numFAMS}]"
    recupFichierFamille "$TMP_DIR" "$fic_gedcom"
    echo "Traitement terminé"

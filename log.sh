@@ -1,3 +1,7 @@
+tab:init() {
+   echo "" > "/tmp/tab"
+}
+
 tab:inc() {
    return 0
    local tab=$(cat "/tmp/tab")   
@@ -21,7 +25,11 @@ tab:get() {
    cat "/tmp/tab"
 }
 
-log () {
+_log() {
+   :
+}
+
+log() {
    local tab=$(tab:get)
    local idFct=""
    local chrono
@@ -73,3 +81,28 @@ error() {
 
 
 
+spin() {
+   printf "\b${sp:sc++:1}"
+   ((sc==${#sp})) && sc=0
+}
+
+pauseRunSH() {
+	local filename="" pause="" runsh="" i=0
+
+	filename=$(basename -- "$0")
+	filename="${filename%.*}"
+
+	pause="/tmp/$filename.pause.$$"
+	runsh="/tmp/$filename.runsh.$$"
+	if [[ -f "$runsh" ]]; then
+      rm $runsh 2>/dev/null 1>&2
+		bash
+	fi
+	if [[ -f "$pause" ]]; then
+		echo -n "Pause ."
+		i=0
+		while [ -f "$pause" ]; do
+			spin
+		done
+	fi
+}

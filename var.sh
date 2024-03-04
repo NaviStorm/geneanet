@@ -9,11 +9,14 @@ NOM_SCRIPT=$(basename "$0")
 USER_GENEANET=""
 NUMBER='^[0-9]+$'
 nbAppel=0
+
+declare -i optNbAsc=0 nbAsc=-1 optNbDesc=0 nbDesc=-1
+
 #login=$(cat /etc/geneanet-secret/login)
 #pwd=$(cat /etc/geneanet-secret/pwd)
 url="https://gw.geneanet.org"
 
-TMP_DIR="/tmp/geneanet"
+TMP_DIR="/tmp/geneanet"w
 
 DIR_CACHE="${HOME}/geneanet_cache"
 FIC_CACHE="${DIR_CACHE}/cache"
@@ -37,6 +40,13 @@ CHRONO="false"
 portrait="Portrait"
 
 CODE_DEJA_TRAITE="101"
+
+# Si ce fichier existe le script se mets en pause
+# Arret la pause tant que le fichier existe
+pause="/tmp/geneanet.pause.$$"
+# Si ce fichier existe le script execute le shell
+# Le fichier est supprimé tout de suite par le script
+runsh="/tmp/geneanet.runsh.$$"
 
 init_script_var() {
    rm $fic_id $fic_id_exist $fic_id_link $fic_fam 2>/dev/null || true
