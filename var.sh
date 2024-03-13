@@ -32,6 +32,8 @@ user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0"
 TRACE=true
 DEBUG=true
+QUI_PERE="PERE"
+QUI_MERE="MERE"
 QUI_PARENT="PARENT"
 QUI_CONJOINT="CONJOINT"
 QUI_ENFANT="ENFANT"
@@ -42,6 +44,7 @@ CHRONO="false"
 portrait="Portrait"
 
 CODE_DEJA_TRAITE="101"
+CODE_INDIVIDU_INCONNU="102"
 
 # Si ce fichier existe le script se mets en pause
 # Arret la pause tant que le fichier existe

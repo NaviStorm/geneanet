@@ -243,12 +243,32 @@ individu:search( ) {
    individu:get "$fic_tmp_all" nom prenom sex
 
    if [[ "$nom$prenom" == "??" || "$nom$prenom" == "" || "$nom$prenom" == "nullnull" ]]; then
-      echo "FIN ($IdFct): \$nom\$prenom:[$nom$prenom]"
-      echo "$(($(cat $fic_id) - 1))" >$fic_id
+      log:info "Personne Inconnu, mais je traite quand même car peut être le/la père/mère de plusieurs enfants ($IdFct): \$nom\$prenom:[$nom$prenom]"
+      [[ "$Qui" == "$QUI_CONJOINT" || "$Qui" == "$QUI_MERE" ]] && sex="F" || sex="M"
+      ID_INDI="$uri"
+      KeyID:search "$KeyID" "$ID_INDI"
+      if [[ "$?" -eq 1 ]]; then
+         if [[ "$Qui" == "$QUI_CONJOINT" ]]; then
+            # Je suis ici, car je suis je suis djç le conjoint d'un autre
+            KeyID_Epouse=$(KeyID:get "$KeyID")
+            eval "${1}=\"$KeyID\"" 2>/dev/null
+         fi
+         export tab=$(echo $tab | sed -e 's/   //')
+         log:info "($IdFct): $KeyID ($(KeyID:get $KeyID)) Déjà traité [${ID_INDI}]"
+         clean_fichier_temporaire "$KeyID"
+         [[ "$nbAsc" -gt 0 ]] && nbAsc=$(( nbAsc - 1 ))
+         [[ "$nbDesc" -gt 0 ]] && nbDesc=$(( nbDesc - 1 ))
+         fam:write "fams=[$FAMS]&sex=[$sex]&KeyID=[$KeyID_Epouse]"
+      else
+         ged:write "$KeyID" "KeyID=[$KeyID]&nom=[N/A]&prenom=[N/A]&sex=[$sex]"
+         fam:write "fams=[$FAMS]&sex=[$sex]&KeyID=[$KeyID]"
+      fi
+
       export tab="${tab//   /}"
       clean_fichier_temporaire "$KeyID"
       [[ "$nbAsc" -gt 0 ]] && nbAsc=$(( nbAsc - 1 ))
       [[ "$nbDesc" -gt 0 ]] && nbDesc=$(( nbDesc - 1 ))
+#      return $CODE_INDIVIDU_INCONNU
       return 0
    fi
 
@@ -304,7 +324,7 @@ individu:search( ) {
    ged:write "$KeyID" "date_naissance=[$GEDCOM_naissance]&ville_naissance=[$villeNaissance]&source_naissance=[$srcNaissance]&note_naissance=[$noteNaissance]"
    ged:write "$KeyID" "date_deces=[$GEDCOM_deces]&ville_deces=[$villeDeces]&source_deces=[$srcDeces]&note_deces=[$noteDeces]"
 
-   if [[ "${Qui}" == "${QUI_PARENT}" ]]; then      
+   if [[ "${Qui}" == "${QUI_PARENT}" || "${Qui}" == "${QUI_PERE}"  || "${Qui}" == "${QUI_PERE}" ]]; then      
       if ! siMarie "$fic_tmp_all"; then
          ged:write "$KeyID" "fams=[$FAMS]"
       fi
@@ -403,6 +423,7 @@ individu:search( ) {
                if [[ "$retCode" -gt 299 ]]; then
                   continue
                fi
+#               CODE_INDIVIDU_INCONNU
                if [[ "$retCode" -eq 0 || "$retCode" -eq "$CODE_DEJA_TRAITE" ]]; then
                   # Ecriture dans fichier FAM, qui sera contatené dans le fichier ged à la fin
                   log:info "($IdFct): J'écris dans fichier FAMS[$FAMS] KeyID:[$KeyID] les dates de mariage/divorce"
@@ -455,11 +476,11 @@ individu:search( ) {
          local lien_mere=$(sed -e "s/<a href=\"/\n<a href=\"/g" "$fic_tmp_parent_mere" | grep -v "&m=\|&t=||&i1=\|&i2=" | grep "&p=\|&n=" | grep "^.*href" | tail -1 | sed -e 's/^.*href="//g' | sed -e 's/">.*$//')
          log:info "($IdFct): nom_pere:[$nom_pere] lien_pere:[$lien_pere] nom_mere:[$nom_mere] lien_mere:[$lien_mere]"
          # Recherche le Père
-         if [[ "$nom_pere" == *"? ?"* || "$nom_pere" == "" || "$nom_pere" == *"null null"* ]]; then
-            log:info "($IdFct): Pas de père [$nom_pere] [$lien_pere] $nom $prenom" "$getParent" "0" "$getFrere"
-            nb_parent=$((nb_parent-1))
-            KeyID_Pere=0
-         else
+####         if [[ "$nom_pere" == *"? ?"* || "$nom_pere" == "" || "$nom_pere" == *"null null"* ]]; then
+####            log:info "($IdFct): Pas de père [$nom_pere] [$lien_pere] $nom $prenom" "$getParent" "0" "$getFrere"
+####            nb_parent=$((nb_parent-1))
+####            KeyID_Pere=0
+####         else
             log:info "($IdFct) Cherche le pere avec nouveau N° FAMS:[$FAMS_SUIVANTE]"
             local findID
             individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PARENT}]?uri=[${lien_pere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
@@ -473,14 +494,14 @@ individu:search( ) {
 
             [[ "$retCode" -eq "$CODE_DEJA_TRAITE" ]] && KeyID_Pere=$(KeyID:get "$retID") || KeyID_Pere=$retID
             log:info "($IdFct) I@$KeyID_Pere@ est le père de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
-         fi
+####         fi
 
          # Recherche le Père
-         if [[ "$nom_mere" == *"? ?"* || "$nom_mere" == "" || "$nom_mere" == *"null null"*  ]]; then
-            log:info "($IdFct): Pas de mère pour $nom $prenom" "$getParent" "0" "$getFrere"
-            nb_parent=$((nb_parent-1))
-            KeyID_Mere=0
-         else
+####         if [[ "$nom_mere" == *"? ?"* || "$nom_mere" == "" || "$nom_mere" == *"null null"*  ]]; then
+####            log:info "($IdFct): Pas de mère pour $nom $prenom" "$getParent" "0" "$getFrere"
+####            nb_parent=$((nb_parent-1))
+####            KeyID_Mere=0
+####         else
             log:info "($IdFct) Cherche la mere avec nouveau N° FAMS :[$FAMS_SUIVANTE]"
             local findID
             individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PARENT}]?uri=[${lien_mere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
@@ -493,7 +514,7 @@ individu:search( ) {
             fi
             [[ "$retCode" -eq "$CODE_DEJA_TRAITE" ]] && KeyID_Mere=$(KeyID:get "$retID") || KeyID_Mere=$retID
             log:info "($IdFct) I@$retID@ (I@$retID@) est le la mère de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
-         fi
+####         fi
 
          if [[ "$nb_parent" -ne 0 ]]; then
             local Old_FAMS_SUIVANTE="$FAMS_SUIVANTE"
@@ -506,7 +527,7 @@ individu:search( ) {
                fi
                # Je créé une mère fictif
                KeyID_Mere=$(KeyID:inc "$fic_id")
-               ged:write "$KeyID_Mere" "KeyID=[$KeyID_Mere]&nom=[?]&=prenom=[?]&sex=[F]"
+               ged:write "$KeyID_Mere" "KeyID=[$KeyID_Mere]&nom=[N/A]&=prenom=[N/A]&sex=[F]"
                fam:write "fams=[$FAMS_SUIVANTE]&sex=[F]&KeyID=[$KeyID_Mere]"
                log:info "La famille trouvé sans mère est Old_FAMS_SUIVANTE:[$Old_FAMS_SUIVANTE] FAMS_SUIVANTE:[$FAMS_SUIVANTE]"
             elif  [[ "$KeyID_Pere" -eq 0 ]]; then
@@ -518,7 +539,7 @@ individu:search( ) {
                fi
                # Je créé une mère fictif
                KeyID_Pere=$(KeyID:inc "$fic_id")
-               ged:write "$KeyID_Pere" "KeyID=[$KeyID_Pere]&nom=[?]&=prenom=[?]&sex=[F]"
+               ged:write "$KeyID_Pere" "KeyID=[$KeyID_Pere]&nom=[N/A]&=prenom=[N/A]&sex=[F]"
                fam:write "fams=[$FAMS_SUIVANTE]&sex=[M]&KeyID=[$KeyID_Pere]"
                log:info "La famille trouvé sans père est Old_FAMS_SUIVANTE:[$Old_FAMS_SUIVANTE] FAMS_SUIVANTE:[$FAMS_SUIVANTE]"
             fi
