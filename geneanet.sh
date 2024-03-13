@@ -48,10 +48,9 @@ SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/var.sh"
 source "${SCRIPT_DIR}/log.sh"
 source "${SCRIPT_DIR}/date.sh"
-source "${SCRIPT_DIR}/cherche_indi.sh"
-source "${SCRIPT_DIR}/cherche_enfant.sh"
-source "${SCRIPT_DIR}/get_page_html.sh"
 source "${SCRIPT_DIR}/cache.sh"
+source "${SCRIPT_DIR}/cherche_indi.sh"
+source "${SCRIPT_DIR}/cherche_html.sh"
 source "${SCRIPT_DIR}/cherche_source.sh"
 source "${SCRIPT_DIR}/cherche_note.sh"
 source "${SCRIPT_DIR}/write_indi.sh"
@@ -62,10 +61,10 @@ initialise_individu() {
 }
 
 init_cnx(){
-	log "DEB fic_config:[$fic_config]"
+	log:debug "DEB fic_config:[$fic_config]"
    USER_GENEANET=$(grep user "${fic_config}" | sed -e 's/user.*=//g' -e 's/ //g' -e "s/'//g")
    COOKIES=$(grep COOKIES "${fic_config}" | sed -e 's/^.*COOKIES=//g' -e "s/'//g")
-	log "FIN"
+	log:debug "FIN"
 }
 
 
@@ -140,12 +139,12 @@ save() {
    local param="$1"
    local _fic _tmp_dir _fic_ged _url
 
-   log "param:[$param]"
+   log:info "param:[$param]"
    _fic=$(getParam "fic" "$param")
    _tmp_dir=$(getParam "tmp" "$param")
    _fic_ged=$(getParam "ged" "$param")
    _url=$(getParam "url" "$param")
-   log "_fic:[$_fic] _tmp_dir:[$_tmp_dir] _fic_ged:[$_fic_ged] _url:[$_url]"
+   log:info "_fic:[$_fic] _tmp_dir:[$_tmp_dir] _fic_ged:[$_fic_ged] _url:[$_url]"
    echo "fic=[$bckOpt]?tmp=[$TMP_DIR]?ged=[$fic_gedcom]?url=[$url_param]" > "${_fic}"
 }
 
@@ -281,7 +280,6 @@ main() {
             ;;
          u)
             url_param="$OPTARG"
-            echo "ICI url_param:[$url_param]"
             # echo "Parsing option: '-${optchar}' $OPTARG" >&2
             ;;
          t)
@@ -327,13 +325,12 @@ main() {
    touch "$fic_gedcom"
 
    init_cnx
-   log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant] ch_Frere:[$ch_Frere] numFAMS:[$numFAMS]"
+   log:info "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant] ch_Frere:[$ch_Frere] numFAMS:[$numFAMS]"
    ged:init "$fic_gedcom"
 
 #   bckOpt="/tmp/.gen.lock.$$"
 #   save "fic=[$bckOpt]?tmp=[$TMP_DIR]?ged=[$fic_gedcom]?url=[$url_param]"
 #   instance
-   log "NbAsc:[$nbAsc] optNbAsc:[$optNbAsc] // NbDesc:[$nbDesc] optNbDesc:[$optNbDesc] // getParent:[$getParent] getEnfant:[$getEnfant]"
    individu:search retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PARENT}]?uri=[${uri}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${numFAMS}]"
    recupFichierFamille "$TMP_DIR" "$fic_gedcom"
    echo "Traitement terminé"

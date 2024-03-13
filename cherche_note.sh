@@ -5,7 +5,7 @@ edit_note() {
     local note=$2
     local __noteIndi="" __noteNaissance="" __noteUnion="" __noteDeces="" __noteFamille=""
 
-    log "DEB: cherche_note(): type_note:[$type_note] note:[$note]"
+    log:info "DEB: cherche_note(): type_note:[$type_note] note:[$note]"
     if [[ "$type_note" == "indi" ]]; then
         __noteIndi="$note"
     elif [[ "$type_note" == "naissance" ]]; then
@@ -24,63 +24,68 @@ edit_note() {
     [[ "$__noteUnion" != "" ]] && eval "$5=\"$__noteUnion\""
     [[ "$__noteDeces" != "" ]] && eval "$6=\"$__noteDeces\""
     [[ "$__noteFamille" != "" ]] && eval "$7=\"$__noteFamille\""
-    log "Fin: cherche_note(): __noteIndi:[$__noteIndi] __noteNaissance:[$__noteNaissance] __noteFamille:[$__noteFamille] __noteUnion:[$__noteDeces] NOTE_DECES:[$__noteDeces]"
+    log:info "Fin: cherche_note(): __noteIndi:[$__noteIndi] __noteNaissance:[$__noteNaissance] __noteFamille:[$__noteFamille] __noteUnion:[$__noteDeces] NOTE_DECES:[$__noteDeces]"
+    return 0
 }
 
 cherche_note() {
-    local ficNote="$1"
+    local _fic="$1"
+    local ficNote="${TMP_DIR}_note_$$"
     local _noteIndi="" _noteNaissance="" _noteUnion="" _noteDeces="" _noteFamille="" line=""
     local deb_section=0 note="" type=""
 
-    log "DEB cherche_note ficNote:[$ficNote]"
+    sed -e '1,/^<!-- notes -->/d' -e '/^<!-- /,10000d' -e 's/<a href="//g' -e 's/<\/a>//g' -e 's/<\/p>//g' -e 's/<br>//g' -e 's/ <p>//g' "$_fic" |\
+        grep -v 'div.*class' | grep -v '^<p>$' | grep -v '^</p>$' | grep -v '^</div>$' | grep -v '<p style=' | sed -e 's/<\/div>//g' > "$ficNote"
+
+    log:info "DEB cherche_note ficNote:[$ficNote]"
     while read -r line; do
         deb_section=$(echo "$line" | grep -E "<h3>|<h3 |note-wed-" | wc -l | bc)
-        # log "deb_section:[$deb_section] $line"
+        # log:info "deb_section:[$deb_section] $line"
         if [[ "$deb_section" -eq 1 && "$note" != "" ]]; then
-            # log "deb_section:[$deb_section] note:[$note] Appel edit_note ($type)"
+            # log:info "deb_section:[$deb_section] note:[$note] Appel edit_note ($type)"
             edit_note "$type" "$note" _noteIndi _noteNaissance _noteUnion _noteDeces _noteFamille
             note=""
         fi
         if [[ "$deb_section" -eq 1 ]]; then
             if [[ "$line" == *">$LB_NOTE_PERSONNE<"* ]]; then
-                # log "==> note individuelle"
+                # log:info "==> note individuelle"
                 type="indi"
             elif [[ "$line" == *">$LB_NOTE_NAISSANCE<"* ]]; then
-                # log "==> note Naissance"
+                # log:info "==> note Naissance"
                 type="naissance"
             elif [[ "$line" == *">$LB_NOTE_UNION<"* ]]; then
-                # log "==> Notes concernant l'union"
+                # log:info "==> Notes concernant l'union"
                 type="union"
             elif [[ "$line" == *">$LB_NOTE_UNION_AVEC<"* ]]; then
-                # log "==> note Union avec"
+                # log:info "==> note Union avec"
                 type="union_avec"
             elif [[ "$line" == *">$LB_NOTE_DECES<"* ]]; then
-                # log "==> note Deces"
+                # log:info "==> note Deces"
                 type="deces"
             elif [[ "$line" == *"note-wed"* ]]; then
-                # log "==> note note.wed"
+                # log:info "==> note note.wed"
                 type="famille"
             fi
             note_inclus=$(echo $line | sed -e 's/^.*<\/h3>$//g' -e 's/^.*note-wed-1"><p>//g')
-            # log "note_inclus:[$note_inclus]"
+            # log:info "note_inclus:[$note_inclus]"
             if [[ "$note_inclus" != "" ]]; then
                 note_tmp=$(echo "$line" | sed -e 's/^.*<\/h3>//g' | sed -e 's/<p.*$//g')
-                # log "note_tmp:[$note_tmp]"
+                # log:info "note_tmp:[$note_tmp]"
                 note="$note $note_tmp"
-                # log "note:[$note]"
+                # log:info "note:[$note]"
             fi
             continue
         else
             if [[ "$type" != "" && "$line" != "" ]]; then
-                # log "$type != \"\""
+                # log:info "$type != \"\""
                 note_tmp=${line//ototototototo/}
-                # log "$type != \"\" note_tmp:[$note_tmp]"
+                # log:info "$type != \"\" note_tmp:[$note_tmp]"
                 if [[ "$note" == "" ]]; then
                     note="$note_tmp"
                 else
                     note="$note\n$note_tmp"
                 fi
-                # log "$type != \"\" note:[$note]"
+                # log:info "$type != \"\" note:[$note]"
                 deb_section=0
             fi
         fi
@@ -89,14 +94,15 @@ cherche_note() {
         edit_note "$type" "$note" _noteIndi _noteNaissance _noteUnion _noteDeces _noteFamille
         note=""
     fi
-
+    rm "$ficNote"
     eval "$2=\"$_noteIndi\""
     eval "$3=\"$_noteNaissance\""
     eval "$4=\"$_noteUnion\""
     eval "$5=\"$_noteDeces\""
     eval "$6=\"$_noteFamille\""
 
-    log "FIN: cherche_note() type:[$type] note:[$note] _noteIndi:[$_noteIndi] _noteNaissance:[$_noteNaissance] _noteFamille:[$_noteFamille] _noteUnion:[$_noteUnion] _noteDeces:[$_noteDeces]"
+    log:info "FIN: cherche_note() type:[$type] note:[$note] _noteIndi:[$_noteIndi] _noteNaissance:[$_noteNaissance] _noteFamille:[$_noteFamille] _noteUnion:[$_noteUnion] _noteDeces:[$_noteDeces]"
+    return 0
 }
 
 main_cherche_note() {

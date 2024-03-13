@@ -15,11 +15,11 @@ cherche_enfant() {
    local num_ID=0
    local numFAMS=0
 
-   log "================== CHERCHE ENFANT =================="
-   log "ficGedcom:[$ficGedcom] fic_in:[$fic_in] numFAMS:[$numFAMS]"
+   log:info "================== CHERCHE ENFANT =================="
+   log:info "ficGedcom:[$ficGedcom] fic_in:[$fic_in] numFAMS:[$numFAMS]"
    touch "$fic_tmp"
    if [[ -f "$fic_in" ]]; then
-      log "[$fic_in] existe, je le recopie dans [$fic_tmp]"
+      log:info "[$fic_in] existe, je le recopie dans [$fic_tmp]"
       cat "$fic_in" > "$fic_tmp"
    else
       while IFS='' read -r data; do
@@ -29,7 +29,7 @@ cherche_enfant() {
 
    TYPE_BLOC="NULL"
    while IFS='' read -r html_ligne; do
-      log "html_ligne:[$html_ligne]"
+      log:info "html_ligne:[$html_ligne]"
 
       if [[ "${html_ligne}" == *"${LB_MARIE}$LB_MARIE_AVEC"* && "$TYPE_BLOC" == "" ]]; then
          TYPE_BLOC="FICHE_UNION"
@@ -94,11 +94,11 @@ cherche_enfant() {
          num_ID=0
          num_FAMC=0
          numFAMS=0
-         log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant ] num_ID:[$num_ID] num_FAMC:[$num_FAMC] numFAMS:[$numFAMS]"
+         log:info "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant ] num_ID:[$num_ID] num_FAMC:[$num_FAMC] numFAMS:[$numFAMS]"
          individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_ENFANT}]?uri=[${uri}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[1]?numFamille=[${numFAMS}]"
          local retCode="$?"
          if [[ "$retCode" -ne 0 ]]; then
-            log "Erreur retour individu:search:[$retCode]"
+            log:info "Erreur retour individu:search:[$retCode]"
             return "$retCode"
          fi
          #         individu:search retID "$QUI_ENFANT" "$uri" "$ch_Parent" "$ch_Epoux" "$ch_Frere" "$ch_Enfant" "$num_ID" "$num_FAMC" "$numFAMS"
@@ -190,7 +190,7 @@ cherche_enfant() {
          num_ID=0
          num_FAMC=0
          numFAMS=0
-         log "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant ] num_ID:[$num_ID] num_FAMC:[$num_FAMC] numFAMS:[$numFAMS]"
+         log:info "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant ] num_ID:[$num_ID] num_FAMC:[$num_FAMC] numFAMS:[$numFAMS]"
          #         individu:search retID "$QUI_ENFANT" "$uri" "$ch_Parent" "$ch_Epoux" "$ch_Frere" "$ch_Enfant" "$num_ID" "$num_FAMC" "$numFAMS"
          echo "            Conjoint : $(echo "${html_ligne}" | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//g')"
          echo "               Lien Conjoint : $uri"
