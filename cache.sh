@@ -31,7 +31,7 @@ cache:exist() {
 
    if [[ "$NbFicCache" -eq 1 ]]; then
       _ficCache=$(grep "\[${_link}\]" "${FIC_CACHE}" | sed -e 's/^.*f:\[//g' -e 's/\].*$//g' -e "s/\$HOME/$(echo "$HOME"|sed -e 's/\//\\\//g')/g")
-      sha256sum "$_ficCache" | sed -e 's/ .*$//g'
+      sha256sum "${DIR_CACHE}/$_ficCache" | sed -e 's/ .*$//g'
       return 1
    else
       echo ""
@@ -52,7 +52,7 @@ cache:get(){
    _ficCache=$(cache:filename "$_uri")
 #   log:info "nom fichier en cache [$_ficCache]"
 
-   gunzip -c "$_ficCache" > "$_fic"
+   gunzip -c "${DIR_CACHE}/${_ficCache}" > "$_fic"
 #   cp "$_ficCache" "$_fic"
    retCode="$?"
    return "$retCode"
@@ -69,7 +69,7 @@ cache:rm() {
    [[ "$retCode" -eq 0 ]] && return 1
    _filename=$(cache:filename "$_uri")
    [[ "$?" -ne 0 ]] && return 1 
-   ls -latr "$_filename"
+   ls -latr "${DIR_CACHE}/$_filename"
    return 0
 }
 
@@ -85,7 +85,7 @@ cache:put(){
 
    local sha256_cache="" sha256_fic="" 
    
-   nameFic="${DIR_CACHE}/$(uuidgen | tr '[:upper:]' '[:lower:]').gz"
+   nameFic="$(uuidgen | tr '[:upper:]' '[:lower:]').gz"
    sha256_cache=$(cache:exist "${_uri}")
    retCode="$?"
    [[ "$retCode" -eq 1 ]] && log:info "Cette page [${_uri}] est déjà dans le cache" || log:info "Cette page [${_uri}] n'est pas dans le cache"
@@ -99,13 +99,13 @@ cache:put(){
          return 0
       fi
       log:info "sha256_cache:[$sha256_cache] sha256_fic:[$sha256_fic]"
-      gzip -c "$_fic"  > "$nameFic"
+      gzip -c "$_fic"  > "${DIR_CACHE}/$nameFic"
 #      cp "${_fic}" "$nameFic" 2>/dev/null 1>&2
       retCode="$?"
       [[ "$retCode" -ne 0 ]] && log:info "Mise a jour du cache" || log:info "Erreur de copie, pas de mise a jour du cache"
    else
-      log:info "Pas dans le cache, je copie [$_fic] dans [$nameFic]"
-      gzip -c "$_fic"  > "$nameFic"
+      log:info "Pas dans le cache, je copie [$_fic] dans [${DIR_CACHE}/$nameFic]"
+      gzip -c "$_fic"  > "${DIR_CACHE}/$nameFic"
 #      cp "${_fic}" "${nameFic}" 2>/dev/null 1>&2
 #      cp "${_fic}" "${nameFic}" 2>/dev/null 1>&2
       retCode="$?"
