@@ -1,4 +1,5 @@
-#!/usr/local/bin/bash
+##########!/usr/local/bin/bash
+#!/bin/bash
 
 
 #### ./geneanet.sh "https://gw.geneanet.org/egarciat?lang=fr&iz=0&p=maria+magdalena+rita&n=amat+mira" 24 ""
