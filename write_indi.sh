@@ -28,7 +28,7 @@ ged:write() {
 
    ficCOM=$(ged:filename "$numID")
 
-   log:info "ficCOM:[$ficCOM] Param: [$param]"
+   log:info "DEB numID:[$numID] Param:[$param]"
    KeyID=$(getParam "KeyID" "$param")
    nom=$(getParam "nom" "$param")
    prenom=$(getParam "prenom" "$param")
@@ -148,7 +148,7 @@ fam:write() {
    log:info "DEB ficCOM:[$ficCOM] Param:[$param]"
    # Initialisation du fichier Famille
    if [[ ! -f "$ficCOM" ]]; then
-      log:info "Initialisation fichier nFAMS${nFAMS}"
+      log:info "Initialisation fichier [$ficCOM]"
       echo "0 @F${nFAMS}@ FAM" >> "$ficCOM"
    fi
 
