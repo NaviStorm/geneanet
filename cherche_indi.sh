@@ -63,17 +63,19 @@ incFAM() {
 }
 
 
-decID() {
-   local fic_id="$1"
-   local KeyID=$(($(cat "$fic_id") - 1))
-   echo "$(($(cat "$fic_id") + 1))" >"$fic_id"
-   echo "$KeyID"
+KeyID:dec() {
+   local _fic_id="$1"
+   local _KeyID=$(($(cat $_fic_id) - 1))
+   echo "$_KeyID" >"$_fic_id"
+   eval "${2}=\"$_KeyID\"" 2>/dev/null
 }
 
+
 KeyID:inc() {
-   local fic_id="$1"
-   local KeyID=$(($(cat "$fic_id") + 1))
-   echo "$KeyID" | tee "$fic_id"
+   local _fic_id="$1"
+   local _KeyID=$(($(cat $_fic_id) + 1))
+   echo "$_KeyID" >"$_fic_id"
+   eval "${2}=\"$_KeyID\"" 2>/dev/null
 }
 
 
@@ -464,7 +466,7 @@ individu:search( ) {
          log:info "($IdFct): nom_pere:[$nom_pere] lien_pere:[$lien_pere] nom_mere:[$nom_mere] lien_mere:[$lien_mere]"
          # Recherche le Père
 ####         if [[ "$nom_pere" == *"? ?"* || "$nom_pere" == "" || "$nom_pere" == *"null null"* ]]; then
-         if [[ "$nom_pere" == "" ]]; then
+         if [[ "$lien_pere" == "" ]]; then
             log:info "($IdFct): Pas de père [$nom_pere] [$lien_pere] $nom $prenom" "$getParent" "0" "$getFrere"
             nb_parent=$((nb_parent-1))
             KeyID_Pere=0
@@ -486,7 +488,7 @@ individu:search( ) {
 
          # Recherche le Père
 ####         if [[ "$nom_mere" == *"? ?"* || "$nom_mere" == "" || "$nom_mere" == *"null null"*  ]]; then
-         if [[ "$nom_mere" == "" ]]; then
+         if [[ "$lien_mere" == "" ]]; then
             log:info "($IdFct): Pas de mère pour $nom $prenom" "$getParent" "0" "$getFrere"
             nb_parent=$((nb_parent-1))
             KeyID_Mere=0
@@ -514,8 +516,10 @@ individu:search( ) {
                   FAMS_SUIVANTE=$(incFAM "$fic_fam")
                   fam:write "fams=[$FAMS_SUIVANTE]&sex=[M]&KeyID=[$KeyID_Pere]"
                fi
+
                # Je créé une mère fictif
-               KeyID_Mere=$(KeyID:inc "$fic_id")
+               KeyID:inc "$fic_id" KeyID_Mere
+               log:info "Création mère fictif avec N°KeyID:[$KeyID_Mere]"
                ged:write "$KeyID_Mere" "KeyID=[$KeyID_Mere]&nom=[INCONNU]&=prenom=[INCONNU]&sex=[F]"
                fam:write "fams=[$FAMS_SUIVANTE]&sex=[F]&KeyID=[$KeyID_Mere]"
                log:info "La famille trouvé sans mère est Old_FAMS_SUIVANTE:[$Old_FAMS_SUIVANTE] FAMS_SUIVANTE:[$FAMS_SUIVANTE]"
@@ -527,7 +531,8 @@ individu:search( ) {
                   fam:write "fams=[$FAMS_SUIVANTE]&sex=[F]&KeyID=[$KeyID_Mere]"
                fi
                # Je créé une mère fictif
-               KeyID_Pere=$(KeyID:inc "$fic_id")
+               KeyID:inc "$fic_id" KeyID_Pere
+               log:info "Création père fictif avec N°KeyID:[$KeyID_Pere]"
                ged:write "$KeyID_Pere" "KeyID=[$KeyID_Pere]&nom=[INCONNU]&=prenom=[INCONNU]&sex=[F]"
                fam:write "fams=[$FAMS_SUIVANTE]&sex=[M]&KeyID=[$KeyID_Pere]"
                log:info "La famille trouvé sans père est Old_FAMS_SUIVANTE:[$Old_FAMS_SUIVANTE] FAMS_SUIVANTE:[$FAMS_SUIVANTE]"
