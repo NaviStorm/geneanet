@@ -119,7 +119,7 @@ getParam() {
 
    # ged:write "$KeyID" "KeyID=[$KeyID]&nom=[$nom]&prenom=[$prenom]&sex=[$sex]&source_individu=[$srcIndi]&note_individu=[$noteIndi]"
    # ]&note_deces=[
-   echo "$value" | grep "$key=\[" | sed -e "s/^.*\]&$key=\[//g" | sed -e "s/^$key=\[//g" | sed -e "s/\]&.*$//g" | sed -e "s/\]$//g"
+   echo "$value" | grep "$key=\[" | sed -e "s/^$key=\[//g" |  sed -e "s/^.*\]&$key=\[//g" | sed -e "s/\]&.*$//g" | sed -e "s/\]$//g"
 }
 
 fam:write() {
@@ -169,21 +169,19 @@ fam:write() {
       # Si sex est renseigné, le KeyID doit m'être aussi
       [[ -n "$sex" && -z "$KeyID" ]] && return 1
 
+      # Je recherche la personne si elle est déjà dans le fihcier FAMS
+      grep "$labelTypeEpoux" "$ficCOM"
+      [[ "$?" -eq 0 ]] && return 0
+
       nbEpoux=$(grep "HUSB\|WIFE\|INCO" "$ficCOM" | wc -l | bc)
       if [[ "$nbEpoux" -ge 2 ]]; then
-         log:error "Il y a deja 2 conjoints dans le fichier FAMS [$nFAMS] Param:[$param]"
+         log:error "Déjà 2 conjoints dans FAMS [$nFAMS] Param:[$param]"
          return 1
       fi
 
-      existeDeja=$(grep "$labelTypeEpoux" "$ficCOM" | wc -l | bc)
-      log:info "Recherche $labelTypeEpoux dans fichier famille existeDeja:[$existeDeja]"
-      if [[ "$existeDeja" -eq 1 ]]; then
-         log:error "Il y a deja $labelTypeEpoux dans le fichier Famille [$nFAMS]"
-         return 1
-      else
-         log:info "Ecriture dans fichier nFAMS ${nFAMS} $labelTypeEpoux Qui:[$Qui]"
-         echo "  1 $labelTypeEpoux" >> "$ficCOM"
-      fi
+      log:info "Ecriture dans fichier nFAMS ${nFAMS} $labelTypeEpoux"
+      echo "  1 $labelTypeEpoux" >> "$ficCOM"
+      return 0
    fi
    [[ -n "$GEDCOM_mariage" ]] && echo " $GEDCOM_mariage" >> "$ficCOM"
    [[ -n "$villeMariage" ]] && echo "  2 PLAC $villeMariage" >> "$ficCOM"
