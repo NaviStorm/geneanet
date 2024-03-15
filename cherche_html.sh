@@ -1,4 +1,4 @@
-trace_get_page_html="true"
+trace_cherche_html="true"
 
 init_label() {
    local init_label_type_sex=$1
@@ -8,7 +8,7 @@ init_label() {
    local init_label_labelMarie
    local init_label_TypeEpoux
 
-   log "init_label() PARAM init_label_type_sex:[$init_label_type_sex]"
+   log:info "init_label() PARAM init_label_type_sex:[$init_label_type_sex]"
    if [[ "$init_label_type_sex" == "0" ]]; then
       init_label_sex="M"
       init_label_labelNaissance="$LG_BORN_M"
@@ -29,7 +29,7 @@ init_label() {
       init_label_TypeEpoux="HUSB"
    fi
 
-   log "init_label_type_sex:[$init_label_type_sex] init_label_sex:[$init_label_sex] init_label_labelNaissance:[$init_label_labelNaissance] init_label_labelDeces:[$init_label_labelDeces] init_label_labelMarie:[$init_label_labelMarie]"
+   log:info "init_label_type_sex:[$init_label_type_sex] init_label_sex:[$init_label_sex] init_label_labelNaissance:[$init_label_labelNaissance] init_label_labelDeces:[$init_label_labelDeces] init_label_labelMarie:[$init_label_labelMarie]"
    eval "$2=\"$init_label_sex\""
    eval "$3=\"$init_label_labelNaissance\""
    eval "$4=\"$init_label_labelDeces\""
@@ -39,7 +39,7 @@ init_label() {
 }
 
 
-html:get() {
+html:curl() {
    tab:inc
    local uri="$1"
    local fic_tmp_all="$2"
@@ -47,7 +47,7 @@ html:get() {
    local retCodeCurl=0 retCodeServer=0 nbCurl=0
 
    while true; do
-      log "Appel curl($url/$uri&type=fiche)"
+      log:info "Appel curl($url/$uri&type=fiche)"
       curl -v -s "$url/$uri&type=fiche" \
          -H 'Referer: '"$url/$uri&type=tree" \
          -H $"Cookie: $COOKIES" \
@@ -64,19 +64,19 @@ html:get() {
       if [[ "$retCodeCurl" -ne 0 || "$retCodeServer" -gt 299 ]]; then
          nbCurl=$((nbCurl + 1))
          if [[ "$nbCurl" -eq 5 ]]; then
-            log "J'ai fait 5 tentative nbCurl[$nbCurl], je sors en erreur"
+            log:info "J'ai fait 5 tentative nbCurl[$nbCurl], je sors en erreur"
             rm "$fic_error" 2>/dev/null 1>&2
             tab:dec
             return 1
          fi
-         log "   Erreur curl, je tente encore apres une pause de 5 sec retCodeCurl:[$retCodeCurl] retCodeServer:[$retCodeServer]"
+         log:info "   Erreur curl, je tente encore apres une pause de 5 sec retCodeCurl:[$retCodeCurl] retCodeServer:[$retCodeServer]"
          sleep 60
       else
          if [[ "$OPT_CACHE" -eq 1 ]]; then
-            log "Mise en cache de la page [$uri]"
+            log:info "Mise en cache de la page [$uri]"
             cache:put "$uri" "$fic_tmp_all" "false"
             if [[ "$?" -ne 0 ]]; then 
-               log "Retour curl:put, erreur lors de la mise en cache de la page"
+               log:info "Retour curl:put, erreur lors de la mise en cache de la page"
             fi
          fi
          tab:dec
@@ -87,8 +87,8 @@ html:get() {
 }
 
 
-get_page_html() {
-   trace_get_page_html="true"
+html:get() {
+   html_get="true"
    local _uri=$1 uri=""
    local fic_tmp_all="$2"
    local fic_tmp="$3"
@@ -97,12 +97,12 @@ get_page_html() {
 
    _uri="${1//lang=../lang=${language}}"
    
-   log "DEB uri:[${_uri}] fic_tmp_all:[$fic_tmp_all] fic_tmp:[$fic_tmp] fic_tmp_parent:[$fic_tmp_parent]"
+   log:info "DEB uri:[${_uri}] fic_tmp_all:[$fic_tmp_all] fic_tmp:[$fic_tmp] fic_tmp_parent:[$fic_tmp_parent]"
    touch "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent"
    uri=$(echo "${_uri}" | sed -e 's/&type=tree//g' | sed -e 's/&type=fiche//g')
 
    if [[ "$OPT_CACHE" -eq 0 ]]; then
-      html:get "$uri" "$fic_tmp_all"
+      html:curl "$uri" "$fic_tmp_all"
       if [[ "$?" -ne 0 ]]; then
          tab:dec
          return 1
@@ -110,8 +110,8 @@ get_page_html() {
    else
       cache:get "$uri" "$fic_tmp_all"
       if [[ "$?" -ne 0 ]]; then 
-         log "Cette page [$uri] n'est pas en cache"
-         html:get "$uri" "$fic_tmp_all"
+         log:info "Cette page [$uri] n'est pas en cache"
+         html:curl "$uri" "$fic_tmp_all"
          if [[ "$?" -ne 0 ]]; then
             tab:dec
             return 1
@@ -122,36 +122,72 @@ get_page_html() {
    nbRedirect=$(grep "Redirecting to <a href=" "$fic_tmp_all" | wc -l | bc)
    if [[ "$nbRedirect" -eq 1 ]]; then
       rm "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent" 2>/dev/null 1>&2
-      log "ERREUR de redirection [$url/$uri&type=tree]"
+      log:info "ERREUR de redirection [$url/$uri&type=tree]"
       tab:dec
       return 1
    else
       grep -Ei "lastname|firstname" "$fic_tmp_all" | tail -1 > "$fic_tmp"
       sed '/^$/d' "$fic_tmp_all" | sed -e "s/&nbsp;/ /g" | sed -e "1,/^<!--  ${portrait} -->/d" | sed -e "/Aperçu de l'arbre/,+10000d" -e "s/&nbsp;/ /g" >> "$fic_tmp"
-      log "FIN get_page_html"
+      log:info "FIN get_page_html"
    fi
-   log "FIN"
+   log:info "FIN"
    tab:dec
    return 0
 }
 
-get_page_html_parent() {
+htpm:getParent() {
 	local fic_tmp_all=$1
    local fic_tmp_parent=$2
+   local fic_tmp_parent_pere="${fic_tmp_parent}_pere"
+   local fic_tmp_parent_mere="${fic_tmp_parent}_mere"
+   local nb_parent=0 nom_pere="" lien_pere="" nom_mere="" lien_mere=""
 
-   log "deb get_page_html_parent(): fic_tmp_all:[$fic_tmp_all] fic_tmp_parent:[$fic_tmp_parent]"
-   sed -e "1,/^<!-- Parents /d" -e "/^<!--  Union /,10000d" "$fic_tmp_all" > "$fic_tmp_parent"
-   log "fin get_page_html_parent()"
+   sed -e "1,/^<!-- Parents /d" -e "/^<!--  Union /,10000d" -e '/<li style=/d' "$fic_tmp_all" >$fic_tmp_parent
+   grep "href=\"" "$fic_tmp_parent" | head -1 >"$fic_tmp_parent_pere"
+   grep "href=\"" "$fic_tmp_parent" | tail -1 >"$fic_tmp_parent_mere"
+   nb_parent=$(grep "href" "$fic_tmp_parent" | wc -l | bc)
+
+   log:info "Nb Parent : [$nb_parent]"
+   if [[ "$nb_parent" -ne 0 ]]; then
+      local  nom_pere=$(sed -e "s/<a href=\"/\n<a href=\"/g" "$fic_tmp_parent_pere" | grep -v "&m=\|&t=||&i1=\|&i2=" | grep "&p=\|&n=" | grep "^.*href" | head -1 | sed -e 's/<bdo.*$//g' | sed -e 's/^.*fiche">//' | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//' )
+      local lien_pere=$(sed -e "s/<a href=\"/\n<a href=\"/g" "$fic_tmp_parent_pere" | grep -v "&m=\|&t=||&i1=\|&i2=" | grep "&p=\|&n=" | grep "^.*href" | head -1 | sed -e 's/^.*href="//g' | sed -e 's/">.*$//')
+      local  nom_mere=$(sed -e "s/<a href=\"/\n<a href=\"/g" "$fic_tmp_parent_mere" | grep -v "&m=\|&t=||&i1=\|&i2=" | grep "&p=\|&n=" | grep "^.*href" | tail -1 | sed -e 's/<bdo.*$//g' | sed -e 's/^.*fiche">//' | sed -e 's/<\/a>.*$//g' | sed -e 's/^.*">//' )
+      local lien_mere=$(sed -e "s/<a href=\"/\n<a href=\"/g" "$fic_tmp_parent_mere" | grep -v "&m=\|&t=||&i1=\|&i2=" | grep "&p=\|&n=" | grep "^.*href" | tail -1 | sed -e 's/^.*href="//g' | sed -e 's/">.*$//')
+      log:info "nom_pere:[$nom_pere] lien_pere:[$lien_pere] nom_mere:[$nom_mere] lien_mere:[$lien_mere]"
+
+      # Recherche le Père
+      if [[ "$nom_pere" == *"? ?"* || "$nom_pere" == "" || "$nom_pere" == *"null null"* ]]; then
+         log:info "($IdFct): Pas de père [$nom_pere] [$lien_pere] $nom $prenom" "$getParent" "0" "$getFrere"
+         nb_parent=$((nb_parent-1))
+         KeyID_Pere=0
+      else
+         log:info "($IdFct) Cherche le pere avec nouveau N° FAMS:[$FAMS_SUIVANTE]"
+         local findID
+         individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PARENT}]?uri=[${lien_pere}]?getParent=[0]?getEpoux=[0]?getFrere=[0]?getEnfant=[0]?numFamille=[0]"
+         local retCode="$?"
+         if [[ "$retCode" -gt 299 ]]; then
+            clean_fichier_temporaire "$KeyID"
+            [[ "$nbAsc" -gt 0 ]] && nbAsc=$(( nbAsc - 1 ))
+            [[ "$nbDesc" -gt 0 ]] && nbDesc=$(( nbDesc - 1 ))
+            return "$retCode"
+         fi
+         [[ "$retCode" -eq "$CODE_DEJA_TRAITE" ]] && KeyID_Pere=$(KeyID:get "$retID") || KeyID_Pere=$retID
+         log:info "($IdFct) I@$KeyID_Pere@ est le père de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
+      fi
+
+   else
+      log:info "($IdFct): Pas de Parent"
+   fi
 }
 
 get_page_html_epoux() {
    local fic_tmp_all=$1
    local fic_tmp_enfant=$2
 
-   log "deb get_page_html_enfant(): fic_tmp_all:[$fic_tmp_all] fic_tmp_parent:[$fic_tmp_parent]"
+   log:info "deb get_page_html_enfant(): fic_tmp_all:[$fic_tmp_all] fic_tmp_parent:[$fic_tmp_parent]"
    IFS=''
    sed -e '1,/<!--  Union/d' -e '/^<!--  Frere/,10000d' "$fic_tmp_all" |
       sed '/^$/d' |
       sed -e "s/&nbsp;/ /g" -e "s/^ *//g" -e 's/^<img style=.* alt="H">//g' >$fic_tmp_enfant
-   log "fin get_page_html_enfant()"
+   log:info "fin get_page_html_enfant()"
 }

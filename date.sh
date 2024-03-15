@@ -29,17 +29,17 @@ recupere_date_from_chaine() {
    local local_mois=""
    local local_annee=""
 
-   log "mDate:[$mDate] nbMot:[$nbMot] fmtUK:[$fmtUK]"
+   log:info "mDate:[$mDate] nbMot:[$nbMot] fmtUK:[$fmtUK]"
    local_jour=$(echo "$mDate" | sed -e "s/ .*$//g")
    local_annee=$(echo "$mDate" | sed -e "s/^.* //g")
    local_mois=$(echo "$mDate" | sed -e 's/'$local_jour' //g' | sed -e 's/ '$local_annee'//g')
 
    if [[ "$nbMot" -eq 1 ]]; then
-      # log "   Date : aaaa"
+      # log:info "   Date : aaaa"
       local_mois=""
       local_jour=""
    elif [[ "$nbMot" -eq 2 ]]; then
-      # log "   Date: mm aaaa"
+      # log:info "   Date: mm aaaa"
       local_ba="${local_mois/,/}"
       local_mois="${local_jour/,/}"
       local_jour=""
@@ -59,7 +59,7 @@ recupere_date_from_chaine() {
       fi
    fi
 
-   log "local_jour:[$local_jour] local_mois:[$local_mois] local_annee:[$local_annee]"
+   log:info "local_jour:[$local_jour] local_mois:[$local_mois] local_annee:[$local_annee]"
    eval "$4=\"$local_jour\""
    eval "$5=\"$local_mois\""
    eval "$6=\"$local_annee\""
@@ -81,12 +81,12 @@ jour_mois_Annee() {
    local nb_Mot_deb
    local nb_Mot_fin
 
-   # log "jour_mois_Annee() PARAM:[$1]"
+   # log:info "jour_mois_Annee() PARAM:[$1]"
    # A cause de Juillet et le mot recherche "le", je supprime le mois de juillet pour faire le test
    date_sans_mois=$(echo $1 | sed -e 's/juillet//g' | sed -e 's/aout//g')
    dateEntre=$(echo "$date_sans_mois" | grep "${LG_OU}${LG_LE}\|${LG_OU}${LG_EN}\|${LG_ET}" | wc -l | bc)
-   log "date_sans_mois:[$date_sans_mois] dateEntre:[$dateEntre]"
-   # log "   dateEntre:[$dateEntre]"
+   log:info "date_sans_mois:[$date_sans_mois] dateEntre:[$dateEntre]"
+   # log:info "   dateEntre:[$dateEntre]"
    if [[ -z "$dateEntre" && "$dateEntre" != "" ]]; then
       echo "Pas un entier dateEntre:[$dateEntre]!"
       return 1
@@ -96,12 +96,12 @@ jour_mois_Annee() {
    nbMot=$(echo "$mDate" | wc -w | bc)
 
    if [[ "$dateEntre" -eq 0 ]]; then
-      # log "   date simple"
-      log "mDate:[$mDate]"
+      # log:info "   date simple"
+      log:info "mDate:[$mDate]"
       recupere_date_from_chaine "$mDate" "$nbMot" "$fmtUK" local_bj local_bm local_ba
-      log "nb_Mot_deb:[$nb_Mot_deb] local_bj:[$local_bj] local_bm:[$local_bm] local_ba:[$local_ba]"
+      log:info "nb_Mot_deb:[$nb_Mot_deb] local_bj:[$local_bj] local_bm:[$local_bm] local_ba:[$local_ba]"
    else
-      # log "   date entre"
+      # log:info "   date entre"
       entre_fin=$(echo $1 | sed -e "s/^.* et le //g" | sed -e "s/^.* et //g" | sed -e 's/^.* ou le //g' | sed -e 's/^.* ou en //g' | sed -e 's/^.* ou //g')
       entre_debut=$(echo $1 | sed -e 's/'"$entre_fin"'//g' | sed -e 's/ et ''//g' | sed -e 's/le //g' | sed -e 's/en //g' | sed -e 's/ ou //g')
 
@@ -111,7 +111,7 @@ jour_mois_Annee() {
 
       nb_Mot_deb=$(echo "$entre_debut" | wc -w | bc)
       nb_Mot_fin=$(echo "$entre_fin" | wc -w | bc)
-      log "entre_debut:[$entre_debut] nb_Mot_deb:[$nb_Mot_deb] entre_fin:[$entre_fin] nb_Mot_fin:[$nb_Mot_fin] fmtUK:[$fmtUK]"
+      log:info "entre_debut:[$entre_debut] nb_Mot_deb:[$nb_Mot_deb] entre_fin:[$entre_fin] nb_Mot_fin:[$nb_Mot_fin] fmtUK:[$fmtUK]"
 
       recupere_date_from_chaine "$entre_debut" "$nb_Mot_deb" "$fmtUK" local_bj local_bm local_ba
       recupere_date_from_chaine "$entre_fin" "$nb_Mot_fin" "$fmtUK" local_bj_fin local_bm_fin local_ba_fin
@@ -127,7 +127,7 @@ jour_mois_Annee() {
       eval "$7=\"$local_ba_fin\"" 2>/dev/null
    fi
 
-   # log "Fin jour_mois_Annee()"
+   # log:info "Fin jour_mois_Annee()"
 }
 
 determine_lable_date() {
@@ -135,10 +135,10 @@ determine_lable_date() {
    local Ou="$2"
    local tag="null"
 
-   log "Quand:[$Quand] Ou:[$Ou]"
+   log:info "Quand:[$Quand] Ou:[$Ou]"
    [[ "$Ou" == "0" ]] && Ou=""
 
-   log "QuandOu:[${Quand}${Ou}]"
+   log:info "QuandOu:[${Quand}${Ou}]"
    case "${Quand}${Ou}" in
       "${dt_label_date} 1" ) :
          # Actuce au cas ou la date est "Born date or date"
@@ -166,7 +166,7 @@ determine_lable_date() {
          tag="null"
          ;;
    esac
-   log "Quand:[$Quand] tag:[$tag]"
+   log:info "Quand:[$Quand] tag:[$tag]"
    eval "$3=\"$tag\""
 }
 
@@ -190,7 +190,7 @@ trouver_date() {
    local strNull=""
 
 
-   log "fic:[$fic] dt_label_date:[$dt_label_date]"
+   log:info "fic:[$fic] dt_label_date:[$dt_label_date]"
    sed -e "s/<em>//g" -e "s/<\/em>//g" -e "s/<\/i>//g" -e "s/<i>//g"  -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' "$fic"  | sed -e 's/\//CHARSLASH/g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
 
    # Si date Julien, je ne fais aucun traitement et je la retourne 
@@ -198,14 +198,14 @@ trouver_date() {
    dtJulien=$(cat $dt_fic_tmp | grep " Julian (" | wc -l | bc)
 
    nbLigne=$(cat $dt_fic_tmp | wc -l | bc)
-   log "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
+   log:info "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
    if [[ "$nbLigne" -ne 0  && "$dtJulien" -eq 0 ]]; then
          local ville=$(sed "s/^$dt_label_date.* [1-2][0-9][0-9][0-9],//g" "$dt_fic_tmp" | grep -v "$dt_label_date")
       if [[ "$dt_label_date" == "$LG_MARIED_M" ]]; then
          local ville=$(sed "s/^$dt_label_date.* [1-2][0-9][0-9][0-9],//g" "$dt_fic_tmp" | grep -v "$dt_label_date")
          [[ -n "$ville" ]] && echo "$(sed -e "s/$ville.*$//g" "$dt_fic_tmp" | sed -e "s/,$//g" ) - $ville" >  "$dt_fic_tmp"
       fi
-      log "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
+      log:info "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
 
       # String contain only the town & not the date of the event
       # Ex: Married, Lyon, France
@@ -224,11 +224,11 @@ trouver_date() {
          Ou=$(echo "$mDate" | grep "$LG_OU" | wc -l | bc) || :
          determine_lable_date "$Quand" "$Ou" "dt_tag"
 
-         log "mDate:[$mDate] Quand:[$Quand] Ou:[$Ou] dt_tag:[$dt_tag] "
+         log:info "mDate:[$mDate] Quand:[$Quand] Ou:[$Ou] dt_tag:[$dt_tag] "
          jour_mois_Annee "$mDate" dt_jour dt_mois dt_annee dt_jour_FIN dt_mois_FIN dt_annee_FIN
 
          if [[ "${dt_jour_FIN}${dt_mois_FIN}${dt_annee_FIN}" != "" ]]; then
-            log "dt_jour_FIN:[$dt_jour_FIN] dt_mois_FIN:[$dt_mois_FIN] dt_annee_FIN:[$dt_annee_FIN]"
+            log:info "dt_jour_FIN:[$dt_jour_FIN] dt_mois_FIN:[$dt_mois_FIN] dt_annee_FIN:[$dt_annee_FIN]"
             [[ "$Ou" -eq 1 ]] && Ou="OR " || Ou="AND "
             dt_naissance=$(echo "  2  $dt_tag $dt_jour $dt_mois $dt_annee $Ou $dt_jour_FIN $dt_mois_FIN $dt_annee_FIN" | tr -s '[:space:]')
          else
@@ -242,7 +242,7 @@ trouver_date() {
       else
          dt_ville=$(sed -e "s/^.*${dt_label_date},//g" -e "s/^.*${dt_label_date} - //g" -e "s/^ *//g" "$dt_fic_tmp" -e "s/CHARSLASH/\//g")
       fi
-      log "trouver_date() dt_naissance:[$dt_naissance] dt_tag[$dt_tag] dt_label_date:[$dt_label_date] dt_ville:[$dt_ville]"
+      log:info "trouver_date() dt_naissance:[$dt_naissance] dt_tag[$dt_tag] dt_label_date:[$dt_label_date] dt_ville:[$dt_ville]"
    fi
 
    eval "$3=\"$dt_naissance\""
