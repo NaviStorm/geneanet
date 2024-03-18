@@ -171,7 +171,7 @@ fam:write() {
 
       # Je recherche la personne si elle est déjà dans le fihcier FAMS
       # Recherche "WIFE I@KeyID@" ou "HUSB I@KeyID@"
-      grep "\(WIFE \|HUSB \)@I$_KeyID@" "$_ficCOM" 2>/dev/null 1>&2
+      grep "\(WIFE \|HUSB \|INCO \)@I$KeyID@" "$ficCOM" 2>/dev/null 1>&2
       [[ "$?" -eq 0 ]] && return 0
 
       nbEpoux=$(grep "HUSB\|WIFE\|INCO" "$ficCOM" | wc -l | bc)
