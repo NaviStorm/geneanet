@@ -172,7 +172,7 @@ main() {
 
    echo "" > "/tmp/tab"
    prerequis
-   optspec=":u:ic:o:st:nvxhv-:"
+   optspec=":u:ic:o:st:nvxhdv-:"
    while getopts "$optspec" optchar; do
       case "${optchar}" in
          -)

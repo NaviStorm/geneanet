@@ -523,7 +523,7 @@ individu:search( ) {
          if [[ ! -f "$(fam:filename "$FAMS")" ]]; then
             log:info "($IdFct) Le fichier Famille $(fam:filename "$FAMS") n'existe pas"
             # Je suis la soeur de quelqu'un qui a déjà été traite, je recherche le fichier famille
-            fam:search "$KeyID_Pere" "$KeyID_Mere" FAMS_SUIVANTE
+            FAMS_SUIVANTE=$(fam:search "$KeyID_Pere" "$KeyID_Mere")
             if [[ -n "$FAMS_SUIVANTE" ]]; then
                log:info "($IdFct) Je($KeyID) suis l'enfant de la famille ($FAMS_SUIVANTE)"
                fam:write "fams=[$FAMS_SUIVANTE]&child=[$KeyID]"
@@ -539,7 +539,7 @@ individu:search( ) {
             # Je recherche le fichier Famille de l'enfant
             # Car si je suis l'enfant de la 2ème épouse, le $FAMS_SUIVANTE poine sur la 1ère épouse
             log:info "($IdFct) Ecriture de : je suis l'enfant($KeyID) de la famille Pere($KeyID_Pere) Mere($KeyID_Mere) dans fichier famille FAMS:[$FAMS_SUIVANTE]"
-            fam:search "$KeyID_Pere" "$KeyID_Mere" FAMS_SUIVANTE
+            FAMS_SUIVANTE=$(fam:search "$KeyID_Pere" "$KeyID_Mere")
             if [[ -n "$FAMS_SUIVANTE" ]]; then
                fam:write "fams=[$FAMS_SUIVANTE]&child=[$KeyID]"
                ged:write "$KeyID" "famc=[$FAMS_SUIVANTE]"

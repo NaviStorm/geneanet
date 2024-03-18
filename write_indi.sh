@@ -17,7 +17,7 @@ ged:init() {
 
 ged:filename() {
    local KeyID="$1"
-   echo "${TMP_DIR}/ID_${KeyID}"
+   echo "${TMP_DIR}/ID_$(printf "%.5d" $KeyID)"
 }
 
 
@@ -107,9 +107,9 @@ fam:rm() {
 }
 
 fam:filename() {
-   local nFAMS="$1"
+   local nFAMS=$(( $1 ))
 
-   echo "${TMP_DIR}/FAM_${nFAMS}"
+   echo "${TMP_DIR}/FAM_$(printf "%.5d" $nFAMS)"
 }
 
 
@@ -170,7 +170,8 @@ fam:write() {
       [[ -n "$sex" && -z "$KeyID" ]] && return 1
 
       # Je recherche la personne si elle est déjà dans le fihcier FAMS
-      grep "$labelTypeEpoux" "$ficCOM"
+      # Recherche "WIFE I@KeyID@" ou "HUSB I@KeyID@"
+      grep "\(WIFE \|HUSB \)@I$_KeyID@" "$_ficCOM" 2>/dev/null 1>&2
       [[ "$?" -eq 0 ]] && return 0
 
       nbEpoux=$(grep "HUSB\|WIFE\|INCO" "$ficCOM" | wc -l | bc)
@@ -209,10 +210,16 @@ fam:search() {
    local ficFAM
    local nFAMS=0
 
-   ficFAM=$(grep -l "1 HUSB @I$I1@\|1 WIFE @I$I1@" "$TMP_DIR/FAM_"* | xargs grep -l "1 HUSB @I$I2@\|1 WIFE @I$I2@")
-   nFAMS=${ficFAM//*_/}
-   eval "$3=\"$nFAMS\""
+   ficFAM=$(grep -l "1 HUSB @I$I1@\|1 WIFE @I$I1@\|1 INCO @I$I1@" "$TMP_DIR/FAM_"* | xargs grep -l "1 HUSB @I$I2@\|1 WIFE @I$I2@\|1 INCO @I$I2@" | sed -e 's/^.*_//g' -e 's/^0*//')
+   if [[ -z "$ficFAM" || "$ficFAM" == "" ]]; then
+      log:error "pas de famille trouvé pour ID_1[$I1] et ID_2:[$I2]"
+      echo ""
+      return 1
+   fi
+   echo "$nFAMS"
+   return 0
 }
+
 
 fam:whithout_spouse() {
       local KeyID="$1"
