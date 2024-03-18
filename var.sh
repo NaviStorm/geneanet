@@ -46,6 +46,20 @@ portrait="Portrait"
 CODE_DEJA_TRAITE="101"
 CODE_INDIVIDU_INCONNU="102"
 
+# Variable globale pour les notes/sources )possibel car utilise tout de suite par d'impact sur fct récursive 
+g_srcIndi=""
+g_srcNaissance="" 
+g_srcUnion="" 
+g_srcDeces=""
+
+g_noteIndi=""
+g_noteNaissance=""
+g_noteMariage=""
+g_noteDeces=""
+g_noteFamille=""
+g_noteDivorce=""
+
+
 # Si ce fichier existe le script se mets en pause
 # Arret la pause tant que le fichier existe
 pause="/tmp/geneanet.pause.$$"

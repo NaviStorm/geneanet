@@ -2,36 +2,28 @@ trace_cherche_note="false"
 
 edit_note() {
     local type_note=$1
-    local note=$2
-    local __noteIndi="" __noteNaissance="" __noteUnion="" __noteDeces="" __noteFamille=""
+    local note=$(echo "$2" | sed -e 's/&#62/>/g' -e 's/&#60;/</g' -e 's/&#47;/\//g' -e 's/&#41;/)/g' -e 's/&#40;/(/g' -e 's/&#38;/\&/g' -e 's/&#37;/%/g' -e 's/&#36;/$/g' -e 's/&#35;/#/g' -e 's/&#34;/"/g' -e 's/&#33;/!/g' -e 's/&#42;/*/g' -e 's/&#43;/+/g')
 
-    log:info "DEB: cherche_note(): type_note:[$type_note] note:[$note]"
-    if [[ "$type_note" == "indi" ]]; then
-        __noteIndi="$note"
-    elif [[ "$type_note" == "naissance" ]]; then
-        __noteNaissance="$note"
-    elif [[ "$type_note" == "union" ]]; then
-        __noteFamille="$note"
-    elif [[ "$type_note" == "union_avec" ]]; then
-        __noteUnion="$note"
-    elif [[ "$type_note" == "deces" ]]; then
-        __noteDeces="$note"
-    elif [[ "$type_note" == "famille" ]]; then
-        __noteFamille="$note"
-    fi
-    [[ "$__noteIndi" != "" ]] && eval "$3=\"$__noteIndi\""
-    [[ "$__noteNaissance" != "" ]] && eval "$4=\"$__noteNaissance\""
-    [[ "$__noteUnion" != "" ]] && eval "$5=\"$__noteUnion\""
-    [[ "$__noteDeces" != "" ]] && eval "$6=\"$__noteDeces\""
-    [[ "$__noteFamille" != "" ]] && eval "$7=\"$__noteFamille\""
-    log:info "Fin: cherche_note(): __noteIndi:[$__noteIndi] __noteNaissance:[$__noteNaissance] __noteFamille:[$__noteFamille] __noteUnion:[$__noteDeces] NOTE_DECES:[$__noteDeces]"
+    log:info "DEB: type_note:[$type_note] note:[$note]"
+    case "$type_note" in
+        "indi") g_noteIndi="$note";;
+        "naissance") g_noteNaissance="$note";;
+        "union") g_noteFamille="$note";;
+        "union_avec") g_noteMariage="$note";;
+        "deces") g_noteDeces="$note";;
+        "famille") g_noteFamille="$note";;
+        *)
+            log:error "Type note inconnue [$type_note]"
+    esac
+
+    log:info "Fin: g_noteIndi:[$g_noteIndi] g_noteNaissance:[$g_noteNaissance] g_noteFamille:[$g_noteFamille] g_noteUnion:[$g_noteDeces] g_noteDeces:[$g_noteDeces]"
     return 0
 }
 
 cherche_note() {
     local _fic="$1"
     local ficNote="${TMP_DIR}_note_$$"
-    local _noteIndi="" _noteNaissance="" _noteUnion="" _noteDeces="" _noteFamille="" line=""
+    local line=""
     local deb_section=0 note="" type=""
 
     sed -e '1,/^<!-- notes -->/d' -e '/^<!-- /,10000d' -e 's/<a href="//g' -e 's/<\/a>//g' -e 's/<\/p>//g' -e 's/<br>//g' -e 's/ <p>//g' "$_fic" |\
@@ -47,25 +39,16 @@ cherche_note() {
             note=""
         fi
         if [[ "$deb_section" -eq 1 ]]; then
-            if [[ "$line" == *">$LB_NOTE_PERSONNE<"* ]]; then
-                # log:info "==> note individuelle"
-                type="indi"
-            elif [[ "$line" == *">$LB_NOTE_NAISSANCE<"* ]]; then
-                # log:info "==> note Naissance"
-                type="naissance"
-            elif [[ "$line" == *">$LB_NOTE_UNION<"* ]]; then
-                # log:info "==> Notes concernant l'union"
-                type="union"
-            elif [[ "$line" == *">$LB_NOTE_UNION_AVEC<"* ]]; then
-                # log:info "==> note Union avec"
-                type="union_avec"
-            elif [[ "$line" == *">$LB_NOTE_DECES<"* ]]; then
-                # log:info "==> note Deces"
-                type="deces"
-            elif [[ "$line" == *"note-wed"* ]]; then
-                # log:info "==> note note.wed"
-                type="famille"
-            fi
+            case "$line" in
+                *">$LB_NOTE_PERSONNE<"*) type="indi";;
+                *">$LB_NOTE_NAISSANCE<"*) type="naissance";;
+                *">$LB_NOTE_UNION<"* ) type="union";;
+                *">$LB_NOTE_UNION_AVEC<"*) type="union_avec";;
+                *">$LB_NOTE_DECES<"*) type="deces";;
+                *"note-wed"*) type="famille";;
+                *)
+                    log:error "Type note inconnue [$line]"
+            esac
             note_inclus=$(echo $line | sed -e 's/^.*<\/h3>$//g' -e 's/^.*note-wed-1"><p>//g')
             # log:info "note_inclus:[$note_inclus]"
             if [[ "$note_inclus" != "" ]]; then
@@ -95,13 +78,8 @@ cherche_note() {
         note=""
     fi
     rm "$ficNote"
-    eval "$2=\"$_noteIndi\""
-    eval "$3=\"$_noteNaissance\""
-    eval "$4=\"$_noteUnion\""
-    eval "$5=\"$_noteDeces\""
-    eval "$6=\"$_noteFamille\""
 
-    log:info "FIN: cherche_note() type:[$type] note:[$note] _noteIndi:[$_noteIndi] _noteNaissance:[$_noteNaissance] _noteFamille:[$_noteFamille] _noteUnion:[$_noteUnion] _noteDeces:[$_noteDeces]"
+    log:info "Fin: g_noteIndi:[$g_noteIndi] g_noteNaissance:[$g_noteNaissance] g_noteFamille:[$g_noteFamille] g_noteUnion:[$g_noteDeces] g_noteDeces:[$g_noteDeces]"
     return 0
 }
 

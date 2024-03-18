@@ -88,7 +88,7 @@ KeyID:search() {
 
    _index=$(echo "${2}" | sed -e 's/&type=tree//g' | sed -e "s/lang=../lang=$language/g" -e 's/&type=fiche//g' -e 's/&/_/g' -e 's/=/_/g' -e 's/\?/_/g' -e 's/\+/_/g' -e 's/\].*$//g')
 
-   grep "\[$_index\]" "$fic_id_exist"
+   grep "\[$_index\]" "$fic_id_exist" 2>/dev/null 1>&2
    if [[ "$?" -eq 0 ]]; then
       dbKeyID="$KeyID"
       KeyID=$(grep "\[$_index\]" "$fic_id_exist" | sed -e 's/ .*$//g')
@@ -200,15 +200,15 @@ individu:search( ) {
    local nb_parent
 
    local nom prenom sex nbEpoux
-   local GEDCOM_naissance="" tgNaissance="" villeNaissance="" noteNaissance="" srcNaissance="" julienNaissance=""
-   local GEDCOM_deces=""     tgDeces=""     villeDeces=""     noteDeces=""     srcDeces="" julienDeces=""
-   local GEDCOM_mariage=""   tgMariage=""   villeMariage=""   noteMariage=""   srcUnion="" julienMariage=""  
-   local GEDCOM_divorce=""   tgDivorce=""   villeDivorce=""   noteDivorce="" julienDivorce=""
+   local GEDCOM_naissance="" tgNaissance="" villeNaissance="" julienNaissance=""
+   local GEDCOM_deces=""     tgDeces=""     villeDeces=""     julienDeces=""
+   local GEDCOM_mariage=""   tgMariage=""   villeMariage=""   julienMariage=""  
+   local GEDCOM_divorce=""   tgDivorce=""   villeDivorce=""   julienDivorce=""
    local bj="" bm="" by="" bj_Fin="" bm_Fin="" by_Fin=""
    local dj="" dm="" dy="" dj_Fin="" dm_Fin="" dy_Fin=""
    local mj="" mm="" my="" mj_Fin="" mm_Fin="" my_Fin=""
    local sj="" sm="" sy="" sj_Fin="" sm_Fin="" sy_Fin=""
-   local srcIndi noteIndi  noteFamille
+
    local findID retID KeyID_Pere KeyID_Mere KeyID_Epouse nbEnfantEpoux KeyID_Enfant retCode
    local ref_epoux=0 ligne_precedente_marie_avec=0 lineMarried=0 numMariage=0 firstFAMS=0 SansDate=0 epoux_trouve=0 epoux_trouve=0
 
@@ -297,19 +297,21 @@ individu:search( ) {
    fam:write "fams=[$FAMS]&sex=[$sex]&KeyID=[$KeyID]"
 
    # Recherche des Sources pour l'individu
-   cherche_source "$fic_tmp_all" srcIndi srcNaissance srcUnion srcDeces
-   log:debug "($IdFct)Retour cherche_source srcIndi=[$srcIndi] srcNaissance=[$srcNaissance] srcUnion=[$srcUnion] srcDeces=[$srcDeces]"
+   g_srcIndi="" g_srcNaissance="" g_srcUnion="" g_srcDeces=""
+   cherche_source "$fic_tmp_all"
+   log:debug "($IdFct)Retour cherche_source g_srcIndi=[$g_srcIndi] g_srcNaissance=[$g_srcNaissance] g_srcUnion=[$g_srcUnion] g_srcDeces=[$g_srcDeces]"
 
    # Recherche Note pour l'individu
-   cherche_note "$fic_tmp_all" noteIndi noteNaissance noteMariage noteDeces noteFamille
-   log:debug "($IdFct) Retour cherche_note noteIndi=[$noteIndi] noteNaissance=[$noteNaissance] noteMariage=[$noteMariage] noteDeces=[$noteDeces] noteFamille:[$noteFamille]"
+   g_noteIndi="" g_noteNaissance="" g_noteMariage="" g_noteDeces="" g_noteFamille=""
+   cherche_note "$fic_tmp_all"
+   log:debug "($IdFct) Retour cherche_note g_noteIndi=[$g_noteIndi] g_noteNaissance=[$g_noteNaissance] g_noteMariage=[$g_noteMariage] g_noteDeces=[$g_noteDeces] g_noteFamille:[$g_noteFamille]"
 
    [[ -n "$julienNaissance" ]] && note_naissance="[$julienNaissance][$note_naissance]"
-   [[ -n "$julienDeces" ]] && noteDeces="[$julienDeces][$noteDeces]"
+   [[ -n "$julienDeces" ]] && g_noteDeces="[$julienDeces][$g_noteDeces]"
 
-   ged:write "$KeyID" "KeyID=[$KeyID]&nom=[$nom]&prenom=[$prenom]&sex=[$sex]&source_individu=[$srcIndi]&note_individu=[$noteIndi]"
-   ged:write "$KeyID" "date_naissance=[$GEDCOM_naissance]&ville_naissance=[$villeNaissance]&source_naissance=[$srcNaissance]&note_naissance=[$noteNaissance]"
-   ged:write "$KeyID" "date_deces=[$GEDCOM_deces]&ville_deces=[$villeDeces]&source_deces=[$srcDeces]&note_deces=[$noteDeces]"
+   ged:write "$KeyID" "KeyID=[$KeyID]&nom=[$nom]&prenom=[$prenom]&sex=[$sex]&source_individu=[$g_srcIndi]&note_individu=[$g_noteIndi]"
+   ged:write "$KeyID" "date_naissance=[$GEDCOM_naissance]&ville_naissance=[$villeNaissance]&source_naissance=[$g_srcNaissance]&note_naissance=[$g_noteNaissance]"
+   ged:write "$KeyID" "date_deces=[$GEDCOM_deces]&ville_deces=[$villeDeces]&source_deces=[$g_srcDeces]&note_deces=[$g_noteDeces]"
 
    if [[ "${Qui}" == "${QUI_PARENT}" || "${Qui}" == "${QUI_PERE}"  || "${Qui}" == "${QUI_PERE}" ]]; then      
       if ! siMarie "$fic_tmp_all"; then
@@ -398,8 +400,8 @@ individu:search( ) {
                   else
                      villeDivorce=""  
                   fi
-                  noteDivorce=$(grep -A2 "Divorce.*${nomConjoint}" "$fic_tmp_all" | grep "nnotes" | sed -e "s/^.*nnotes\">//g" -e "s/<.*$//g")
-                  log:info "($IdFct): GEDCOM_divorce:[$GEDCOM_divorce] tgDivorce:[$tgDivorce] sj:[$]sj sm:[$sm] sy:[$sy] sj_Fin:[$ƒ] sm_Fin:[$sm_Fin] sy_Fin:[$sy_Fin] villeDivorce:[$villeDivorce] noteDivorce:[$noteDivorce]"
+                  g_noteDivorce=$(grep -A2 "Divorce.*${nomConjoint}" "$fic_tmp_all" | grep "nnotes" | sed -e "s/^.*nnotes\">//g" -e "s/<.*$//g")
+                  log:info "($IdFct): GEDCOM_divorce:[$GEDCOM_divorce] tgDivorce:[$tgDivorce] sj:[$]sj sm:[$sm] sy:[$sy] sj_Fin:[$ƒ] sm_Fin:[$sm_Fin] sy_Fin:[$sy_Fin] villeDivorce:[$villeDivorce] g_noteDivorce:[$g_noteDivorce]"
                fi
                local lien_epoux=$(echo $ligne_html | sed -e "s/<a href=\"/\n<a href=\"/g" | grep -v "&m=\l&t=|&i1=\|&i2=" | grep "&p=\|&n=\|&i=" | sed -e 's/^.*<a href="//g' | sed -e 's/">.*$//g')
                ligne_precedente_marie_avec=0
@@ -414,10 +416,10 @@ individu:search( ) {
 #               CODE_INDIVIDU_INCONNU
                if [[ "$retCode" -eq 0 || "$retCode" -eq "$CODE_DEJA_TRAITE" ]]; then
                   # Ecriture dans fichier FAM, qui sera contatené dans le fichier ged à la fin
-                  [[ -n "$julienDivorce" ]] && noteDivorce="[$julienDivorce][$noteDivorce]"
-                  [[ -n "$julienMariage" ]] && noteMariage="[$julienNaissance][$noteMariage]"
-                  log:info "($IdFct): Ecriture dans FAMS[$FAMS] KeyID:[$KeyID] info de mariage/divorce Mariage:[$noteMariage] Divorce:[$noteMariage]"
-                  fam:write "fams=[$FAMS]&GEDCOM_mariage=[$GEDCOM_mariage]&villeMariage=[$villeMariage]&note_mariage=[$noteMariage]&GEDCOM_divorce=[$GEDCOM_divorce]&ville_divorce=[$villeDivorce]&note_divorce=[$noteDivorce]"
+                  [[ -n "$julienDivorce" ]] && g_noteDivorce="[$julienDivorce][$g_noteDivorce]"
+                  [[ -n "$julienMariage" ]] && g_noteMariage="[$julienNaissance][$g_noteMariage]"
+                  log:info "($IdFct): Ecriture dans FAMS[$FAMS] KeyID:[$KeyID] info de mariage/divorce Mariage:[$g_noteMariage] Divorce:[$g_noteMariage]"
+                  fam:write "fams=[$FAMS]&GEDCOM_mariage=[$GEDCOM_mariage]&villeMariage=[$villeMariage]&note_mariage=[$g_noteMariage]&GEDCOM_divorce=[$GEDCOM_divorce]&ville_divorce=[$villeDivorce]&note_divorce=[$g_noteDivorce]"
                fi
                nbEpoux=$((nbEpoux - 1))
                if [[ "$nbEpoux" -eq 0 ]]; then
