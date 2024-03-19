@@ -1,3 +1,22 @@
+SCRIPT_DIR=$(dirname "$0")
+source "${SCRIPT_DIR}/var.sh"
+
+readini(){
+   local _fic="$1"
+   local _key="$2"
+   local _value=""
+
+
+   # !!6M@84!j$uej9454GQ4
+   _value=$(cat "$_fic" | grep "^$_key" | sed -e "s/^$_key=//g" 2>/dev/null)
+   if [[ ${_value:0:1} == "'"* || ${_value:0:1} == "\""* ]]; then
+      len=$(( ${#_value} - 2 ))
+      _value=${_value:1:len}
+   fi
+   echo "$_value"
+}
+
+
 tab:init() {
    echo "" > "/tmp/tab"
 }
@@ -92,8 +111,9 @@ pauseRunSH() {
 	filename=$(basename -- "$0")
 	filename="${filename%.*}"
 
-	pause="/tmp/$filename.pause.$$"
-	runsh="/tmp/$filename.runsh.$$"
+	local pause="/tmp/$filename.pause.$$"
+	local runsh="/tmp/$filename.runsh.$$"
+	local fic_opt="/tmp/$filename.opt.$$"
 	if [[ -f "$runsh" ]]; then
       rm $runsh 2>/dev/null 1>&2
 		bash
@@ -104,5 +124,21 @@ pauseRunSH() {
 		while [ -f "$pause" ]; do
 			spin
 		done
+	fi
+	if [[ -f "$fic_opt" ]]; then
+      local _OPT_CACHE=$(readini "$fic_opt" "opt-cache")
+      local _OPT_SOURCE=$(readini "$fic_opt" "opt-source")
+      local _OPT_NOTE=$(readini "$fic_opt" "opt-note")
+      local _OPT_TRACE=$(readini "$fic_opt" "opt-trace")
+      local _OPT_DEBUG=$(readini "$fic_opt" "opt-debug")
+      local _OPT_CHRONO=$(readini "$fic_opt" "opt-chrono")
+      [[ "$_OPT_CACHE" == "1" || "$_OPT_CACHE" == "0" ]] && OPT_CACHE=$_OPT_CACHE
+      [[ "$_OPT_SOURCE" == "1" || "$_OPT_SOURCE" == "0" ]] && OPT_SOURCE=$_OPT_SOURCE
+      [[ "$_OPT_NOTE" == "1" || "$_OPT_C_OPT_NOTEACHE" == "0" ]] && OPT_NOTE=$_OPT_NOTE
+      
+      [[ "$_OPT_TRACE" == "true" || "$_OPT_TRACE" == "false" ]] && TRACE=$_OPT_TRACE
+      [[ "$_OPT_DEBUG" == "true" || "$_OPT_DEBUG" == "false" ]] && DEBUG=$_OPT_CACHE
+      [[ "$_OPT_CHRONO" == "true" || "$_OPT_CHRONO" == "false" ]] && CHRONO=$_OPT_CHRONO
+      mv "$fic_opt" "${fic_opt}.bck"2>/dev/null 1>&2
 	fi
 }

@@ -95,7 +95,11 @@ KeyID:search() {
       log:info "($dbKeyID) Dejà dans fichier ID_Trouve (déjà traite avec [$KeyID] [$_index])"
       echo "$KeyID @I$dbKeyID@" >> "$fic_id_link"
       # Ajoute au vrai ID(KeyID), le nouveau doublon en fin de ligne
-      sed -i "/^$KeyID / s/$/ @$dbKeyID@/" "$fic_id_exist"
+      if [[ "$OSTYPE" == *"arwin"* ]]; then
+         sed -i '' "/^$KeyID / s/$/ @$dbKeyID@/" "$fic_id_exist"
+      else
+         sed -i "/^$KeyID / s/$/ @$dbKeyID@/" "$fic_id_exist"
+      fi
       return 1
    else
       echo "$KeyID [$_index]" >> "$fic_id_exist"
@@ -223,7 +227,7 @@ individu:search( ) {
    fi
    log:info "($IdFct) URI:[$URI] Qui:[$Qui] KeyID:[$KeyID]"
 
-   html:get "$URI" "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent"
+   html:get "$URI" "$fic_tmp_all"
    retCode="$?"
    if [[ "$retCode" -ne 0 ]]; then
       export tab=$(echo $tab | sed -e 's/   //')
@@ -293,21 +297,26 @@ individu:search( ) {
    fi
 
    fam:write "fams=[$FAMS]&sex=[$sex]&KeyID=[$KeyID]"
+   ged:write "$KeyID" "KeyID=[$KeyID]&nom=[$nom]&prenom=[$prenom]&sex=[$sex]"
 
    # Recherche des Sources pour l'individu
-   g_srcIndi="" g_srcNaissance="" g_srcUnion="" g_srcDeces=""
-   cherche_source "$fic_tmp_all"
-   log:debug "($IdFct)Retour cherche_source g_srcIndi=[$g_srcIndi] g_srcNaissance=[$g_srcNaissance] g_srcUnion=[$g_srcUnion] g_srcDeces=[$g_srcDeces]"
+   if [[ "$OPT_SOURCE" == "1" ]]; then
+      g_srcIndi="" g_srcNaissance="" g_srcUnion="" g_srcDeces=""
+      source:get "$fic_tmp_all"
+      log:debug "($IdFct)Retour source:get g_srcIndi=[$g_srcIndi] g_srcNaissance=[$g_srcNaissance] g_srcUnion=[$g_srcUnion] g_srcDeces=[$g_srcDeces]"
+   fi
 
    # Recherche Note pour l'individu
-   g_noteIndi="" g_noteNaissance="" g_noteMariage="" g_noteDeces="" g_noteFamille=""
-   cherche_note "$fic_tmp_all"
-   log:debug "($IdFct) Retour cherche_note g_noteIndi=[$g_noteIndi] g_noteNaissance=[$g_noteNaissance] g_noteMariage=[$g_noteMariage] g_noteDeces=[$g_noteDeces] g_noteFamille:[$g_noteFamille]"
+   if [[ "$OPT_NOTE" == "1" ]]; then
+      g_noteIndi="" g_noteNaissance="" g_noteMariage="" g_noteDeces="" g_noteFamille=""
+      note:get "$fic_tmp_all"
+      log:debug "($IdFct) Retour note:get g_noteIndi=[$g_noteIndi] g_noteNaissance=[$g_noteNaissance] g_noteMariage=[$g_noteMariage] g_noteDeces=[$g_noteDeces] g_noteFamille:[$g_noteFamille]"
+   fi
 
    [[ -n "$julienNaissance" ]] && note_naissance="[$julienNaissance][$note_naissance]"
    [[ -n "$julienDeces" ]] && g_noteDeces="[$julienDeces][$g_noteDeces]"
 
-   ged:write "$KeyID" "KeyID=[$KeyID]&nom=[$nom]&prenom=[$prenom]&sex=[$sex]&source_individu=[$g_srcIndi]&note_individu=[$g_noteIndi]"
+   ged:write "$KeyID" "source_individu=[$g_srcIndi]&note_individu=[$g_noteIndi]"
    ged:write "$KeyID" "date_naissance=[$GEDCOM_naissance]&ville_naissance=[$villeNaissance]&source_naissance=[$g_srcNaissance]&note_naissance=[$g_noteNaissance]"
    ged:write "$KeyID" "date_deces=[$GEDCOM_deces]&ville_deces=[$villeDeces]&source_deces=[$g_srcDeces]&note_deces=[$g_noteDeces]"
 

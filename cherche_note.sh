@@ -1,6 +1,6 @@
-trace_cherche_note="false"
+trace_cherche_note="true"
 
-edit_note() {
+note:edit() {
     local type_note=$1
     local note=$(echo "$2" | sed -e 's/&#62/>/g' -e 's/&#60;/</g' -e 's/&#47;/\//g' -e 's/&#41;/)/g' -e 's/&#40;/(/g' -e 's/&#38;/\&/g' -e 's/&#37;/%/g' -e 's/&#36;/$/g' -e 's/&#35;/#/g' -e 's/&#34;/"/g' -e 's/&#33;/!/g' -e 's/&#42;/*/g' -e 's/&#43;/+/g')
 
@@ -20,7 +20,7 @@ edit_note() {
     return 0
 }
 
-cherche_note() {
+note:get() {
     local _fic="$1"
     local ficNote="${TMP_DIR}_note_$$"
     local line=""
@@ -29,13 +29,13 @@ cherche_note() {
     sed -e '1,/^<!-- notes -->/d' -e '/^<!-- /,10000d' -e 's/<a href="//g' -e 's/<\/a>//g' -e 's/<\/p>//g' -e 's/<br>//g' -e 's/ <p>//g' "$_fic" |\
         grep -v 'div.*class' | grep -v '^<p>$' | grep -v '^</p>$' | grep -v '^</div>$' | grep -v '<p style=' | sed -e 's/<\/div>//g' > "$ficNote"
 
-    log:info "DEB cherche_note ficNote:[$ficNote]"
+    log:info "DEB note:get ficNote:[$ficNote]"
     while read -r line; do
         deb_section=$(echo "$line" | grep -E "<h3>|<h3 |note-wed-" | wc -l | bc)
         # log:info "deb_section:[$deb_section] $line"
         if [[ "$deb_section" -eq 1 && "$note" != "" ]]; then
-            # log:info "deb_section:[$deb_section] note:[$note] Appel edit_note ($type)"
-            edit_note "$type" "$note" _noteIndi _noteNaissance _noteUnion _noteDeces _noteFamille
+            # log:info "deb_section:[$deb_section] note:[$note] Appel note:edit ($type)"
+            note:edit "$type" "$note" _noteIndi _noteNaissance _noteUnion _noteDeces _noteFamille
             note=""
         fi
         if [[ "$deb_section" -eq 1 ]]; then
@@ -74,7 +74,7 @@ cherche_note() {
         fi
     done < $ficNote
     if [[ "$type" != "" && "$note" != "" ]]; then
-        edit_note "$type" "$note" _noteIndi _noteNaissance _noteUnion _noteDeces _noteFamille
+        note:edit "$type" "$note" _noteIndi _noteNaissance _noteUnion _noteDeces _noteFamille
         note=""
     fi
     rm "$ficNote"

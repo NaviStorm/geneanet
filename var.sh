@@ -1,3 +1,4 @@
+gsed="/usr/local/bin/gsed"
 LC_CTYPE=C
 LANG=C
 language=en
@@ -10,7 +11,7 @@ USER_GENEANET=""
 NUMBER='^[0-9]+$'
 nbAppel=0
 
-declare -i optNbAsc=0 nbAsc=-1 optNbDesc=0 nbDesc=-1
+declare -i optNbAsc=0 nbAsc=-1 optNbDesc=0 nbDesc=-1 
 
 #login=$(cat /etc/geneanet-secret/login)
 #pwd=$(cat /etc/geneanet-secret/pwd)
@@ -22,7 +23,7 @@ TMP_DIR="/tmp/geneanet"w
 
 DIR_CACHE="${HOME}/geneanet_cache"
 FIC_CACHE="${DIR_CACHE}/cache"
-declare -i OPT_CACHE=1
+declare -i OPT_CACHE=1 OPT_SOURCE=1 OPT_NOTE=1
 
 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
 user_agent="Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"

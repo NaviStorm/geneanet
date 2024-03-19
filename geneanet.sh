@@ -1,4 +1,3 @@
-##########!/usr/local/bin/bash
 #!/bin/bash
 
 
@@ -194,6 +193,12 @@ main() {
                   ;;
                no-cache)
                   OPT_CACHE=0
+                  ;;
+               no-source)
+                  OPT_SOURCE=0
+                  ;;
+               no-note)
+                  OPT_NOTE=0
                   ;;
                cache=*)
                   DIR_CACHE=${OPTARG#*=}

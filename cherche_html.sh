@@ -91,14 +91,12 @@ html:get() {
    html_get="true"
    local _uri=$1 uri=""
    local fic_tmp_all="$2"
-   local fic_tmp="$3"
-   local fic_tmp_parent="$4"
    local nbRedirect=0 retCodeCurl=0 retCodeServer=0
 
    _uri="${1//lang=../lang=${language}}"
    
-   log:info "DEB uri:[${_uri}] fic_tmp_all:[$fic_tmp_all] fic_tmp:[$fic_tmp] fic_tmp_parent:[$fic_tmp_parent]"
-   touch "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent"
+   log:info "DEB uri:[${_uri}] fic_tmp_all:[$fic_tmp_all]"
+   touch "$fic_tmp_all"
    uri=$(echo "${_uri}" | sed -e 's/&type=tree//g' | sed -e 's/&type=fiche//g')
 
    if [[ "$OPT_CACHE" -eq 0 ]]; then
@@ -116,19 +114,18 @@ html:get() {
             tab:dec
             return 1
          fi
+      else
+         log:debug "utilisation du cache pour [$uri]"
+         return 0
       fi
    fi
 
    nbRedirect=$(grep "Redirecting to <a href=" "$fic_tmp_all" | wc -l | bc)
    if [[ "$nbRedirect" -eq 1 ]]; then
-      rm "$fic_tmp_all" "$fic_tmp" "$fic_tmp_parent" 2>/dev/null 1>&2
+      rm "$fic_tmp_all" 2>/dev/null 1>&2
       log:info "ERREUR de redirection [$url/$uri&type=tree]"
       tab:dec
       return 1
-   else
-      grep -Ei "lastname|firstname" "$fic_tmp_all" | tail -1 > "$fic_tmp"
-      sed '/^$/d' "$fic_tmp_all" | sed -e "s/&nbsp;/ /g" | sed -e "1,/^<!--  ${portrait} -->/d" | sed -e "/Aperçu de l'arbre/,+10000d" -e "s/&nbsp;/ /g" >> "$fic_tmp"
-      log:info "FIN get_page_html"
    fi
    log:info "FIN"
    tab:dec

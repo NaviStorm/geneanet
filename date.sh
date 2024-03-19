@@ -240,7 +240,7 @@ trouver_date() {
             dt_ville=""
          fi
       else
-         dt_ville=$(sed -e "s/^.*${dt_label_date},//g" -e "s/^.*${dt_label_date} - //g" -e "s/^ *//g" "$dt_fic_tmp" -e "s/CHARSLASH/\//g")
+         dt_ville=$(sed -e "s/^.*${dt_label_date},//g" -e "s/^.*${dt_label_date} - //g" -e "s/^ *//g"  -e "s/CHARSLASH/\//g" "$dt_fic_tmp")
       fi
       log:info "trouver_date() dt_naissance:[$dt_naissance] dt_tag[$dt_tag] dt_label_date:[$dt_label_date] dt_ville:[$dt_ville]"
    fi
