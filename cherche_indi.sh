@@ -153,11 +153,6 @@ descendance:dec() {
 #   $6 : Chercher les freres
 #   $7 : Chercher les enfants
 #   $8 : numero FAMS
-individu:getID( ) {
-   :
-}
-
-
 individu:search( ) {
    export tab="$tab   "
    local param="$2"
@@ -193,13 +188,12 @@ individu:search( ) {
    local fic_tmp_epoux_tmp="${pre}_epoux_tmp"
    local fic_tmp_frere="${pre}_parent_frere"
    local fic_tmp_enfant_tmp="${pre}_enfants"
-   local sex
    local labelNaissance
    local labelDeces
    local labelMarie
    local nb_parent
 
-   local nom prenom sex nbEpoux
+   local _zone="" nom="" prenom="" sex="" nbEpoux=0
    local GEDCOM_naissance="" tgNaissance="" villeNaissance="" julienNaissance=""
    local GEDCOM_deces=""     tgDeces=""     villeDeces=""     julienDeces=""
    local GEDCOM_mariage=""   tgMariage=""   villeMariage=""   julienMariage=""  
@@ -240,7 +234,11 @@ individu:search( ) {
       return 1
    fi
 
-   individu:get "$fic_tmp_all" nom prenom sex
+   # Recherche Nom/prenom/sex
+   _zone=$(sed -e "1,/^(function($, keys){/d" -e "/\<\/head\>/,10000d" -e "/^})(jQuery, GeneanetKeys);$/,10000d" -e 's/^.*$.extend(true, keys.elements, //g' -e 's/);$//g' "$fic_tmp_all" | grep -v "keys.elements =" 2>/dev/null)
+   nom=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.lastname' 2>/dev/null)
+   prenom=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.firstname' 2>/dev/null)
+   sex=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.sex' 2>/dev/null)
 
    if [[ "$nom$prenom" == "??" || "$nom$prenom" == "" || "$nom$prenom" == "nullnull" ]]; then
       log:info "($IdFct) Personne Inconnu, mais je traite quand même car peut être le/la père/mère de plusieurs enfants: \$nom\$prenom:[$nom$prenom]"
@@ -489,14 +487,15 @@ individu:search( ) {
             [[ "$nbDesc" -gt 0 ]] && nbDesc=$(( nbDesc - 1 ))
             return "$retCode"
          fi
+
          [[ "$retCode" -eq "$CODE_DEJA_TRAITE" ]] && KeyID_Mere=$(KeyID:get "$retID") || KeyID_Mere=$retID
-         log:info "($IdFct) I@$retID@ (I@$retID@) est le la mère de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
+         log:info "($IdFct) I@$KeyID_Mere@ est le la mère de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
 
          local Old_FAMS_SUIVANTE="$FAMS_SUIVANTE"
          if [[ "$KeyID_Mere" -eq 0 ]]; then
             fam:whithout_spouse "$KeyID_Pere" "WIFE" FAMS_SUIVANTE
             if [[ -z "$FAMS_SUIVANTE" ]]; then
-               log:info "Famille avec père celibatire ($KeyID_Pere) de l'enfant ($retID) non trouvé, donc création"
+               log:info "Famille avec père celibatire ($KeyID_Pere) de l'enfant ($KeyID) non trouvé, donc création"
                FAMS_SUIVANTE=$(incFAM "$fic_fam")
                fam:write "fams=[$FAMS_SUIVANTE]&sex=[M]&KeyID=[$KeyID_Pere]"
             fi
@@ -510,7 +509,7 @@ individu:search( ) {
          elif  [[ "$KeyID_Pere" -eq 0 ]]; then
             fam:whithout_spouse "$KeyID_Mere" "HUSB" FAMS_SUIVANTE
             if [[ -z "$FAMS_SUIVANTE" ]]; then
-               log:info "Famille avec mère celibatire ($KeyID_Mere) de l'enfant ($retID) non trouvé, donc création"
+               log:info "Famille avec mère celibatire ($KeyID_Mere) de l'enfant ($KeyID) non trouvé, donc création"
                FAMS_SUIVANTE=$(incFAM "$fic_fam")
                fam:write "fams=[$FAMS_SUIVANTE]&sex=[F]&KeyID=[$KeyID_Mere]"
             fi

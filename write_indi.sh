@@ -107,7 +107,7 @@ fam:rm() {
 }
 
 fam:filename() {
-   local nFAMS=$(( $1 ))
+   local nFAMS="$1"
 
    echo "${TMP_DIR}/FAM_$(printf "%.5d" $nFAMS)"
 }
@@ -138,6 +138,7 @@ fam:write() {
    nChild=$(getParam "child" "$param")
    Married=$(getParam "Married" "$param")
 
+
    if [[ -z "$nFAMS" ]]; then
       log:error " Le numero de famille est obligatoire Param:[$param]"
       quitter 1
@@ -146,6 +147,8 @@ fam:write() {
    ficCOM=$(fam:filename "$nFAMS")
 
    log:info "DEB ficCOM:[$ficCOM] Param:[$param]"
+
+   [[ "$nFAMS" -eq 0 ]] && exit 0
    # Initialisation du fichier Famille
    if [[ ! -f "$ficCOM" ]]; then
       log:info "Initialisation fichier [$ficCOM]"
@@ -206,17 +209,17 @@ fam:write() {
 }
 
 fam:search() {
-   local I1="$1" I2="$2"
-   local ficFAM
-   local nFAMS=0
+   local _pere="$1" _mere="$2"
+   local _numFamille=0
 
-   ficFAM=$(grep -l "1 HUSB @I$I1@\|1 WIFE @I$I1@\|1 INCO @I$I1@" "$TMP_DIR/FAM_"* | xargs grep -l "1 HUSB @I$I2@\|1 WIFE @I$I2@\|1 INCO @I$I2@" | sed -e 's/^.*_//g' -e 's/^0*//')
-   if [[ -z "$ficFAM" || "$ficFAM" == "" ]]; then
-      log:error "pas de famille trouvé pour ID_1[$I1] et ID_2:[$I2]"
+   #_numFamille=$(grep -l "1 HUSB @I$_pere@\|1 WIFE @I$_pere@\|1 INCO @I$_pere@" "$TMP_DIR/FAM_"* | xargs grep -l "1 HUSB @I$_mere@\|1 WIFE @I$_mere@\|1 INCO @I$_mere@" | sed -e 's/^.*_//g' -e 's/^0*//')
+   _numFamille=$(grep -l "1 \(HUSB \|WIFE \|INCO \)@I$_pere" "$TMP_DIR/FAM_"* | xargs grep -l "1 \(HUSB \|WIFE \|INCO \)@I$_mere" | sed -e 's/^.*_//g' -e 's/^0*//')
+   if [[ -z "$_numFamille" ]]; then
+      log:error "pas de famille trouvé pour ID_1[$_pere] et ID_2:[$_mere]"
       echo ""
       return 1
    fi
-   echo "$nFAMS"
+   echo "$_numFamille"
    return 0
 }
 
