@@ -49,7 +49,7 @@ log:put() {
    local _level="$1"
 
    shift
-   echo "$@"
+   echo "$@" >&2
 }
 
 log:info() {

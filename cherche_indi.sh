@@ -86,8 +86,9 @@ KeyID:search() {
    local dbKeyID=0
    local _index=""
 
+   log:info "Param: [$@]"
    _index=$(echo "${2}" | sed -e 's/&type=tree//g' | sed -e "s/lang=../lang=$language/g" -e 's/&type=fiche//g' -e 's/&/_/g' -e 's/=/_/g' -e 's/\?/_/g' -e 's/\+/_/g' -e 's/\].*$//g')
-
+   log:info "_index:[$_index]"
    grep "\[$_index\]" "$fic_id_exist" 2>/dev/null 1>&2
    if [[ "$?" -eq 0 ]]; then
       dbKeyID="$KeyID"
@@ -102,6 +103,7 @@ KeyID:search() {
       fi
       return 1
    else
+      log:info "($_index) N'est pas dans le fichier [$KeyID] [$_index])"
       echo "$KeyID [$_index]" >> "$fic_id_exist"
       return 0
    fi
@@ -197,6 +199,7 @@ individu:search( ) {
    local labelMarie
    local nb_parent
 
+   local uri_canonique=""
    local _zone="" nom="" prenom="" sex="" nbEpoux=0
    local GEDCOM_naissance="" tgNaissance="" villeNaissance="" julienNaissance=""
    local GEDCOM_deces=""     tgDeces=""     villeDeces=""     julienDeces=""
@@ -237,6 +240,9 @@ individu:search( ) {
       [[ "$nbDesc" -gt 0 ]] && nbDesc=$(( nbDesc - 1 ))
       return 1
    fi
+   # Je récupère l'ID unique depuis la page HTML
+   uri_canonique=$(grep "canonical" "$fic_tmp_all" 2>/dev/null | sed -e "s/^.*link.*canonical.*href=\"//g" -e "s/\".*$//g"  -e "s/^.*\///g" 2>/dev/null)
+   [[ "$?" -ne 0 ]] && uri_canonique="$URI"
 
    # Recherche Nom/prenom/sex
    _zone=$(sed -e "1,/^(function($, keys){/d" -e "/\<\/head\>/,10000d" -e "/^})(jQuery, GeneanetKeys);$/,10000d" -e 's/^.*$.extend(true, keys.elements, //g' -e 's/);$//g' "$fic_tmp_all" | grep -v "keys.elements =" 2>/dev/null)
@@ -247,7 +253,7 @@ individu:search( ) {
    if [[ "$nom$prenom" == "??" || "$nom$prenom" == "" || "$nom$prenom" == "nullnull" ]]; then
       log:info "($IdFct) Personne Inconnu, mais je traite quand même car peut être le/la père/mère de plusieurs enfants: \$nom\$prenom:[$nom$prenom]"
       [[ "$Qui" == "$QUI_CONJOINT" || "$Qui" == "$QUI_MERE" ]] && sex="F" || sex="M"
-      KeyID:search "$KeyID" "$URI"
+      KeyID:search "$KeyID" "$uri_canonique"
       if [[ "$?" -eq 1 ]]; then
          findID=$(KeyID:get "$KeyID")
          eval "${1}=\"$findID\"" 2>/dev/null
@@ -283,7 +289,7 @@ individu:search( ) {
    local ville=$(grep "$labelNaissance le" "$fic_tmp" | sed -e 's/^.* - //g' -e 's/<\/li>.*$//g')
 
    # Je regarde si l'individu est déjà traité
-   KeyID:search "$KeyID" "$URI"
+   KeyID:search "$KeyID" "$uri_canonique"
    if [[ "$?" -eq 1 ]]; then
       findID=$(KeyID:get "$KeyID")
       log:info "($IdFct): $KeyID ($findID) Déjà traité [$URI]"
@@ -319,7 +325,7 @@ individu:search( ) {
    ged:write "$KeyID" "source_individu=[$g_srcIndi]&note_individu=[$g_noteIndi]"
    ged:write "$KeyID" "date_naissance=[$GEDCOM_naissance]&ville_naissance=[$villeNaissance]&source_naissance=[$g_srcNaissance]&note_naissance=[$g_noteNaissance]"
    ged:write "$KeyID" "date_deces=[$GEDCOM_deces]&ville_deces=[$villeDeces]&source_deces=[$g_srcDeces]&note_deces=[$g_noteDeces]"
-
+   
    if [[ "${Qui}" == "${QUI_PARENT}" || "${Qui}" == "${QUI_PERE}"  || "${Qui}" == "${QUI_PERE}" ]]; then      
       if ! siMarie "$fic_tmp_all"; then
          ged:write "$KeyID" "fams=[$FAMS]"
@@ -416,10 +422,9 @@ individu:search( ) {
                # Pour l'épouse je n'increment pas le N°Famills (FAMS)
                log:info "($IdFct): Je recherche l'épouse de [$KeyID]  pour la famille FAMS[$FAMS] lien_epoux:[$lien_epoux]"               
                individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_CONJOINT}]?uri=[${lien_epoux}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS}]"
-               local retCode="$?"
-               if [[ "$retCode" -gt 299 ]]; then
-                  continue
-               fi
+               retCode="$?"
+               [[ "$retCode" -gt 299 ]] && continue
+
 #               CODE_INDIVIDU_INCONNU
                if [[ "$retCode" -eq 0 || "$retCode" -eq "$CODE_DEJA_TRAITE" ]]; then
                   # Ecriture dans fichier FAM, qui sera contatené dans le fichier ged à la fin
@@ -472,9 +477,8 @@ individu:search( ) {
          log:info "($IdFct): nom_pere:[$nom_pere] lien_pere:[$lien_pere] nom_mere:[$nom_mere] lien_mere:[$lien_mere]"
          # Recherche le Père
          log:info "($IdFct) Cherche le pere avec nouveau N° FAMS:[$FAMS_SUIVANTE]"
-         local findID
          individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PARENT}]?uri=[${lien_pere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
-         local retCode="$?"         
+         retCode="$?"         
          if [[ "$retCode" -gt 299 ]]; then
             clean_fichier_temporaire "$KeyID"
             [[ "$nbAsc" -gt 0 ]] && nbAsc=$(( nbAsc - 1 ))
@@ -487,7 +491,6 @@ individu:search( ) {
 
          # Recherche le Père
          log:info "($IdFct) Cherche la mere avec nouveau N° FAMS :[$FAMS_SUIVANTE]"
-         local findID
          individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PARENT}]?uri=[${lien_mere}]?getParent=[${getParent}]?getEpoux=[${getEpoux}]?getFrere=[${getFrere}]?getEnfant=[0]?numFamille=[${FAMS_SUIVANTE}]"
          local retCode="$?"
          if [[ "$retCode" -gt 299 ]]; then
