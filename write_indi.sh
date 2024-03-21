@@ -51,8 +51,8 @@ ged:write() {
       [[ "$sex" != "" ]] && echo "  1 SEX $sex"
       [[ "$noteIndividu" != "" ]] && echo "  1 NOTE $noteIndividu" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$srcIndividu" != "" ]] && echo "  1 SOUR $srcIndividu" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
-      [[ "$fams" != "" ]] && echo "  1 FAMS @$fams@"
-      [[ "$famc" != "" ]] && echo "  1 FAMC @${famc}@"
+      [[ "$fams" != "" ]] && echo "  1 FAMS @F$fams@"
+      [[ "$famc" != "" ]] && echo "  1 FAMC @F$famc@"
 
       [[ -n "$dateNaissance" || -n "$sourceNnaissance" || -n "$noteNaissance" || -n "$VilleNaissance" ]] && echo "  1 BIRT"
       [[ -n "$dateNaissance"  ]] && echo " $dateNaissance"
