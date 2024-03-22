@@ -79,14 +79,14 @@ KeyID:inc() {
 }
 
 
-Index:Search() {
+KeyID:search() {
    local KeyID="$1"
    local dbKeyID=0
    local _index="" _index_uri=""
    local retCodeC=0
 
    log:debug "Param: [$@]"
-_index=$(echo "${2}" | sed -e 's/&type=tree//g' | sed -e "s/lang=../lang=$language/g" -e 's/&amp;/_/g' -e 's/&type=fiche//g' -e 's/&/_/g' -e 's/=/_/g' -e 's/\?/_/g' -e 's/\+/_/g' -e 's/\].*$//g')
+   _index=$(echo "${2}" | sed -e 's/&type=tree//g' | sed -e "s/lang=../lang=$language/g" -e 's/&amp;/_/g' -e 's/&type=fiche//g' -e 's/&/_/g' -e 's/=/_/g' -e 's/\?/_/g' -e 's/\+/_/g' -e 's/\].*$//g')
    log:debug "_index:[$_index]"
    grep "\[$_index\]" "$fic_id_exist" 2>/dev/null 1>&2
    if [[ "$?" -eq 0 ]]; then
@@ -111,30 +111,6 @@ _index=$(echo "${2}" | sed -e 's/&type=tree//g' | sed -e "s/lang=../lang=$langua
       return 0
    fi
 }
-
-KeyID:search() {
-   log:debug "Param: [$@]"
-   # Test avec uri_canonical "$2"
-   log:debug "Recherche index avec uri_canonical"
-   Index:Search "$1" "$2"
-   # shellcheck disable=SC2181
-   if [[ "$?" -eq 1 ]]; then
-      return 1
-   fi
-   return 0
-   # Si je suis ici c'est que l'ID n'a jamais été traité avant avec l'uri canonical
-   # Si $3 (URI) existe et que $2<>$3 (canonical<>URI) 
-   if [[ -n "$3" && "$1" != "$3" ]]; then
-      log:debug "Recherche index avec URI"
-      # Test avec URI "$3"
-      Index:Search "$1" "$3"
-      # shellcheck disable=SC2181
-      [[ "$?" -eq 1 ]] && return 1 || return 0
-   fi
-   # ID n'a jamais été traité avant, je retourne 0
-   return 0
-}
-
 
 KeyID:get() {
    local KeyID="$1"
@@ -286,7 +262,7 @@ individu:search( ) {
    if [[ "$nom$prenom" == "??" || "$nom$prenom" == "" || "$nom$prenom" == "nullnull" ]]; then
       log:info "($IdFct) Personne Inconnu, mais je traite quand même car peut être le/la père/mère de plusieurs enfants: \$nom\$prenom:[$nom$prenom]"
       [[ "$Qui" == "$QUI_CONJOINT" || "$Qui" == "$QUI_MERE" ]] && sex="F" || sex="M"
-      KeyID:search "$KeyID" "$uri_canonique" "$URI"
+      KeyID:search "$KeyID" "$uri_canonique"
       if [[ "$?" -eq 1 ]]; then
          findID=$(KeyID:get "$KeyID")
          eval "${1}=\"$findID\"" 2>/dev/null
@@ -322,7 +298,7 @@ individu:search( ) {
    local ville=$(grep "$labelNaissance le" "$fic_tmp" | sed -e 's/^.* - //g' -e 's/<\/li>.*$//g')
 
    # Je regarde si l'individu est déjà traité
-   KeyID:search "$KeyID" "$uri_canonique" "$URI"
+   KeyID:search "$KeyID" "$uri_canonique"
    if [[ "$?" -eq 1 ]]; then
       findID=$(KeyID:get "$KeyID")
       log:info "($IdFct): $KeyID ($findID) Déjà traité [$URI]"
