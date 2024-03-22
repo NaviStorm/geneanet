@@ -79,20 +79,20 @@ KeyID:inc() {
 }
 
 
-KeyID:search:index() {
+Index:Search() {
    local KeyID="$1"
    local dbKeyID=0
    local _index="" _index_uri=""
    local retCodeC=0
 
-   log:info "Param: [$@]"
-   _index=$(echo "${2}" | sed -e 's/&type=tree//g' | sed -e "s/lang=../lang=$language/g" -e 's/&amp;/_/g' -e 's/&type=fiche//g' -e 's/&/_/g' -e 's/=/_/g' -e 's/\?/_/g' -e 's/\+/_/g' -e 's/\].*$//g')
-   log:info "_index:[$_index]"
+   log:debug "Param: [$@]"
+_index=$(echo "${2}" | sed -e 's/&type=tree//g' | sed -e "s/lang=../lang=$language/g" -e 's/&amp;/_/g' -e 's/&type=fiche//g' -e 's/&/_/g' -e 's/=/_/g' -e 's/\?/_/g' -e 's/\+/_/g' -e 's/\].*$//g')
+   log:debug "_index:[$_index]"
    grep "\[$_index\]" "$fic_id_exist" 2>/dev/null 1>&2
    if [[ "$?" -eq 0 ]]; then
       dbKeyID="$KeyID"
       KeyID=$(grep "\[$_index\]" "$fic_id_exist" | sed -e 's/ .*$//g')
-      log:info "($dbKeyID) Dejà dans fichier ID_Trouve (déjà traite avec [$KeyID] [$_index])"
+      log:debug "($dbKeyID) Dejà dans fichier ID_Trouve (déjà traite avec [$KeyID] [$_index])"
       echo "$KeyID @I$dbKeyID@" >> "$fic_id_link"
       # Ajoute au vrai ID(KeyID), le nouveau doublon en fin de ligne
       if [[ "$OSTYPE" == *"arwin"* ]]; then
@@ -106,26 +106,28 @@ KeyID:search:index() {
          _index_uri=$(echo "${2}" | sed -e 's/&type=tree//g' | sed -e "s/lang=../lang=$language/g" -e 's/&amp;/_/g' -e 's/&type=fiche//g' -e 's/&/_/g' -e 's/=/_/g' -e 's/\?/_/g' -e 's/\+/_/g' -e 's/\].*$//g')
       fi
       grep "\[$_index\]" "$fic_id_exist" 2>/dev/null 1>&2
-      log:info "($_index) N'est pas dans le fichier [$KeyID] [$_index])"
+      log:debug "($_index) N'est pas dans le fichier [$KeyID] [$_index])"
       echo "$KeyID [$_index]" >> "$fic_id_exist"
       return 0
    fi
 }
 
 KeyID:search() {
-   log:info "Param: [$@]"
+   log:debug "Param: [$@]"
    # Test avec uri_canonical "$2"
-   KeyID:search:index "$1" "$2"
+   log:debug "Recherche index avec uri_canonical"
+   Index:Search "$1" "$2"
    # shellcheck disable=SC2181
    if [[ "$?" -eq 1 ]]; then
       return 1
    fi
-
+   return 0
    # Si je suis ici c'est que l'ID n'a jamais été traité avant avec l'uri canonical
    # Si $3 (URI) existe et que $2<>$3 (canonical<>URI) 
    if [[ -n "$3" && "$1" != "$3" ]]; then
+      log:debug "Recherche index avec URI"
       # Test avec URI "$3"
-      KeyID:search:index "$1" "$3"
+      Index:Search "$1" "$3"
       # shellcheck disable=SC2181
       [[ "$?" -eq 1 ]] && return 1 || return 0
    fi
@@ -265,8 +267,15 @@ individu:search( ) {
       return 1
    fi
    # Je récupère l'ID unique depuis la page HTML
-   uri_canonique=$(grep "canonical" "$fic_tmp_all" 2>/dev/null | sed -e "s/^.*link.*canonical.*href=\"//g" -e "s/\".*$//g"  -e "s/^.*\///g" 2>/dev/null)
+   uri_canonique=$(grep "canonical" "$fic_tmp_all" 2>/dev/null | sed -e "s/&amp;/?/g" -e "s/^.*link.*canonical.*href=\"//g" -e "s/\".*$//g"  -e "s/^.*\///g" 2>/dev/null)
+   p=$(echo $uri_canonique | sed -e 's/^.*?p=//g' -e 's/?.*$//g')
+   n=$(echo $uri_canonique | sed -e 's/^.*?n=//g' -e 's/?.*$//g')
+   log:info "($IdFct) KeyID:[$KeyID] p et d depuis canonique p:[$p] n:[$n] $uri_canonique"
+
+   # Si erreur utiliser l'URI
    [[ "$?" -ne 0 ]] && uri_canonique="$URI"
+   # Si Personne Inconnu, ne pas utiliser l'uri canonical car elles sont toutees identique
+   [[ -z "$p" && -z "$n" ]] && uri_canonique="$URI"
 
    # Recherche Nom/prenom/sex
    _zone=$(sed -e "1,/^(function($, keys){/d" -e "/\<\/head\>/,10000d" -e "/^})(jQuery, GeneanetKeys);$/,10000d" -e 's/^.*$.extend(true, keys.elements, //g' -e 's/);$//g' "$fic_tmp_all" | grep -v "keys.elements =" 2>/dev/null)

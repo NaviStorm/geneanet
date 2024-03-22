@@ -49,7 +49,7 @@ log:put() {
    local _level="$1"
 
    shift
-   echo "$@" >&2
+   echo "$_level $@" >&2
 }
 
 log:info() {
@@ -60,12 +60,12 @@ log:info() {
    if [[ "$TRACE" == "true" ]]; then
       [[ "$CHRONO" == "true" ]] && chrono=$(date "+%d/%m/%Y %T ")
       local file=${BASH_SOURCE[1]##*/} func=${FUNCNAME[1]} line=${BASH_LINENO[0]} lineAppelant=${BASH_LINENO[1]}
-      TRACE_SCRIPT=$(echo "TRACE_${file}" | tr A-Z a-z | sed -e "s/.sh$//g")
-      TRACE_FUNCTION=$(echo "TRACE_${func}" | tr A-Z a-z  | sed -e 's/:/_/g')
-      [[ "${!TRACE_FUNCTION}" == "false" ]] && return 0
-      [[ "${!TRACE_SCRIPT}" == "false" ]] && return 0
+      #TRACE_SCRIPT=$(echo "TRACE_${file}" | tr A-Z a-z | sed -e "s/.sh$//g")
+      #TRACE_FUNCTION=$(echo "TRACE_${func}" | tr A-Z a-z  | sed -e 's/:/_/g')
+      #[[ "${!TRACE_FUNCTION}" == "false" ]] && return 0
+      #[[ "${!TRACE_SCRIPT}" == "false" ]] && return 0
       idFct=$(printf "%s" "${chrono}[${FUNCNAME[2]}:$lineAppelant][$func:$line]")
-      log:put "INFO" "$idFct: $tab$*"
+      log:put "[Info] " "$idFct: $tab$*"
 #      echo "${chrono}${file##*/}:$lineAppelant:$func:$line: $tab$*"
    fi
 }
@@ -78,12 +78,12 @@ log:debug() {
    if [[ "$DEBUG" == "true" ]]; then
       [[ "$CHRONO" == "true" ]] && chrono=$(date "+%d/%m/%Y %T ")
       local file=${BASH_SOURCE[1]##*/} func=${FUNCNAME[1]} line=${BASH_LINENO[0]} lineAppelant=${BASH_LINENO[1]}
-      TRACE_SCRIPT=$(echo "TRACE_${file}" | tr A-Z a-z | sed -e "s/.sh$//g")
-      TRACE_FUNCTION=$(echo "TRACE_${func}" | tr A-Z a-z  | sed -e 's/:/_/g')
-      [[ "${!TRACE_FUNCTION}" == "false" ]] && return 0
-      [[ "${!TRACE_SCRIPT}" == "false" ]] && return 0
+      #TRACE_SCRIPT=$(echo "TRACE_${file}" | tr A-Z a-z | sed -e "s/.sh$//g")
+      #TRACE_FUNCTION=$(echo "TRACE_${func}" | tr A-Z a-z  | sed -e 's/:/_/g')
+      #[[ "${!TRACE_FUNCTION}" == "false" ]] && return 0
+      #[[ "${!TRACE_SCRIPT}" == "false" ]] && return 0
       idFct=$(printf "%s" "${chrono}[${FUNCNAME[2]}:$lineAppelant][$func:$line]")
-      log:put "DEBUG" "$idFct: $tab$*"
+      log:put "[Debug]" "$idFct: $tab$*"
    fi
 }
 
@@ -94,7 +94,7 @@ log:error() {
 
    local file=${BASH_SOURCE[1]##*/} func=${FUNCNAME[1]} line=${BASH_LINENO[0]} lineAppelant=${BASH_LINENO[1]}
    idFct=$(printf "%s" "[${FUNCNAME[2]}:$lineAppelant][$func:$line]")
-   log:put "ERROR" "$idFct: FATAL ERROR $tab$*" >&2
+   log:put "[Error]" "$idFct: FATAL ERROR $tab$*" >&2
    return 1
 }
 
