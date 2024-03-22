@@ -168,7 +168,7 @@ htpm:getParent() {
             [[ "$nbDesc" -gt 0 ]] && nbDesc=$(( nbDesc - 1 ))
             return "$retCode"
          fi
-         [[ "$retCode" -eq "$CODE_DEJA_TRAITE" ]] && KeyID_Pere=$(KeyID:get "$retID") || KeyID_Pere=$retID
+         [[ "$retCode" -eq "$INDI_DEJA_TRAITE" ]] && KeyID_Pere=$(KeyID:get "$retID") || KeyID_Pere=$retID
          log:info "($IdFct) I@$KeyID_Pere@ est le père de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
       fi
 

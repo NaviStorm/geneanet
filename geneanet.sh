@@ -47,6 +47,7 @@ trap 'traperror $? $LINENO $BASH_LINENO "$BASH_COMMAND" $(printf "::%s" ${FUNCNA
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/var.sh"
 source "${SCRIPT_DIR}/log.sh"
+source "${SCRIPT_DIR}/lock.sh"
 source "${SCRIPT_DIR}/date.sh"
 source "${SCRIPT_DIR}/cache.sh"
 source "${SCRIPT_DIR}/cherche_indi.sh"

@@ -44,8 +44,8 @@ tab=""
 CHRONO="false"
 portrait="Portrait"
 
-CODE_DEJA_TRAITE="101"
-CODE_INDIVIDU_INCONNU="102"
+INDI_DEJA_TRAITE="101"
+INDI_INCONNU="102"
 
 # Variable globale pour les notes/sources )possibel car utilise tout de suite par d'impact sur fct récursive 
 g_srcIndi=""
