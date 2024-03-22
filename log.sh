@@ -1,5 +1,5 @@
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/var.sh"
+#SCRIPT_DIR=$(dirname "$0")
+#source "${SCRIPT_DIR}/var.sh"
 
 readini(){
    local _fic="$1"

@@ -11,6 +11,10 @@ USER_GENEANET=""
 NUMBER='^[0-9]+$'
 nbAppel=0
 
+# Pattern pour les nom de fichier
+pattern="\$TMP_DIR/gen_%04d_%s"
+
+
 declare -i optNbAsc=0 nbAsc=-1 optNbDesc=0 nbDesc=-1 
 
 #login=$(cat /etc/geneanet-secret/login)
@@ -19,11 +23,11 @@ url="https://gw.geneanet.org"
 cmd_gzip=$(which gzip)
 cmd_gunzip=$(which gunzip)
 
-TMP_DIR="/tmp/geneanet"w
+TMP_DIR="/tmp/geneanet"
 
 DIR_CACHE="${HOME}/geneanet_cache"
 FIC_CACHE="${DIR_CACHE}/cache"
-declare -i OPT_CACHE=1 OPT_SOURCE=1 OPT_NOTE=1
+declare -i OPT_CACHE=1 OPT_SOURCE=1 OPT_NOTE=1 OPT_DATE=1
 
 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
 user_agent="Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"
@@ -44,8 +48,15 @@ tab=""
 CHRONO="false"
 portrait="Portrait"
 
-CODE_DEJA_TRAITE="101"
-CODE_INDIVIDU_INCONNU="102"
+INDI_DEJA_TRAITE="101"
+INDI_INCONNU="102"
+
+FAMILY_EXIST="200"
+FAMILY_NO_EXIST="100"
+ERROR="1"
+
+FOUND=200
+NOT_FOUND=100
 
 # Variable globale pour les notes/sources )possibel car utilise tout de suite par d'impact sur fct récursive 
 g_srcIndi=""
@@ -59,6 +70,17 @@ g_noteMariage=""
 g_noteDeces=""
 g_noteFamille=""
 g_noteDivorce=""
+
+declare -A html
+declare -A tbFamille
+declare -i maxFam=0
+
+fic_id="${TMP_DIR}/KeyID"
+fic_id_exist="${fic_id}_exist"
+fic_id_link="${fic_id}_link"
+fic_id_parent="${fic_id}_parent"
+fic_fam="${TMP_DIR}/FamID"
+
 
 
 # Si ce fichier existe le script se mets en pause

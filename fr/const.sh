@@ -37,6 +37,7 @@ LG_MOIS_12="décembre"
 
 LB_MARIE="Marié"
 LB_MARIE_AVEC=" Avec "
+LB_ENFANT_AVEC="Avec"
 LB_RELATION="Relation"
 LB_FIANCE="Fiançé"
 

@@ -49,7 +49,7 @@ note:get() {
                 *)
                     log:error "Type note inconnue [$line]"
             esac
-            note_inclus=$(echo $line | sed -e 's/^.*<\/h3>$//g' -e 's/^.*note-wed-1"><p>//g')
+            note_inclus=$(echo "$line" | sed -e 's/^.*<\/h3>$//g' -e 's/^.*note-wed-1"><p>//g')
             # log:info "note_inclus:[$note_inclus]"
             if [[ "$note_inclus" != "" ]]; then
                 note_tmp=$(echo "$line" | sed -e 's/^.*<\/h3>//g' | sed -e 's/<p.*$//g')

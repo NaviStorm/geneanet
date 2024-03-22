@@ -31,13 +31,13 @@ source:get() {
 
     log:info "DEB ficSource:[$ficSource]"
     while read -r ligne_html; do
-        deb_ligne=$(echo $ligne_html | grep -E "^<li>" | wc -l | bc)
+        deb_ligne=$(echo "$ligne_html" | grep -E "^<li>" | wc -l | bc)
         if [[ "$deb_ligne" -eq 1 ]]; then
-            section=$(echo $ligne_html | sed -e 's/<li>//g' -e 's/:.*$//g')
-            local fin_ligne=$(echo $ligne_html | grep -E "<\/li>" | wc -l | bc)
+            section=$(echo "$ligne_html" | sed -e 's/<li>//g' -e 's/:.*$//g')
+            local fin_ligne=$(echo "$ligne_html" | grep -E "<\/li>" | wc -l | bc)
             if [[ "$fin_ligne" -eq 1 ]]; then
                 log:info "ligne_html:[$ligne_html] section:[$section]"
-                ref=$(echo $ligne_html | sed -e "s/^.*$section: //g" -e 's/<\/li>.*$//g')
+                ref=$(echo "$ligne_html" | sed -e "s/^.*$section: //g" -e 's/<\/li>.*$//g')
                 [[ "$?" -ne 0 ]] && return 1
                 source:edit "$ref" "$section"
                 x_ligne="false"
@@ -48,9 +48,9 @@ source:get() {
             continue
         else
             if [[ "$x_ligne" == "true" ]]; then
-                local deb_ref=$(echo $ligne_html | grep -E "^<dt>" | wc -l | bc)
+                local deb_ref=$(echo "$ligne_html" | grep -E "^<dt>" | wc -l | bc)
                 if [[ "$deb_ref" -eq 1 ]]; then
-                    ref=$(echo $ligne_html | sed -e 's/^<dt>//g' -e 's/<\/dt>.*//g')   
+                    ref=$(echo "$ligne_html" | sed -e 's/^<dt>//g' -e 's/<\/dt>.*//g')   
                     x_ligne="false"
                     source:edit "$ref" "$section"
                 else
@@ -77,13 +77,13 @@ source:getOLD() {
 
     log:info "DEB ficSource:[$ficSource]"
     while read -r ligne_html; do
-        deb_ligne=$(echo $ligne_html | grep -E "^<li>" | wc -l | bc)
+        deb_ligne=$(echo "$ligne_html" | grep -E "^<li>" | wc -l | bc)
         if [[ "$deb_ligne" -eq 1 ]]; then
-            section=$(echo $ligne_html | sed -e 's/<li>//g' -e 's/:.*$//g')
-            local fin_ligne=$(echo $ligne_html | grep -E "<\/li>" | wc -l | bc)
+            section=$(echo "$ligne_html" | sed -e 's/<li>//g' -e 's/:.*$//g')
+            local fin_ligne=$(echo "$ligne_html" | grep -E "<\/li>" | wc -l | bc)
             if [[ "$fin_ligne" -eq 1 ]]; then
                 log:info "ligne_html:[$ligne_html] section:[$section]"
-                ref=$(echo $ligne_html | sed -e "s/^.*$section: //g" -e 's/<\/li>.*$//g')
+                ref=$(echo "$ligne_html" | sed -e "s/^.*$section: //g" -e 's/<\/li>.*$//g')
                 [[ "$?" -ne 0 ]] && return 1
                 source:edit "$ref" "$section"
                 x_ligne="false"
@@ -94,9 +94,9 @@ source:getOLD() {
             continue
         else
             if [[ "$x_ligne" == "true" ]]; then
-            local deb_ref=$(echo $ligne_html | grep -E "^<dt>" | wc -l | bc)
+            local deb_ref=$(echo "$ligne_html" | grep -E "^<dt>" | wc -l | bc)
             if [[ "$deb_ref" -eq 1 ]]; then
-                ref=$(echo $ligne_html | sed -e 's/^<dt>//g' -e 's/<\/dt>.*//g')   
+                ref=$(echo "$ligne_html" | sed -e 's/^<dt>//g' -e 's/<\/dt>.*//g')   
                 x_ligne="false"
                 source:edit "$ref" "$section"
             else

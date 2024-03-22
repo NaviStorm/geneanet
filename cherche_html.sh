@@ -160,7 +160,7 @@ htpm:getParent() {
       else
          log:info "($IdFct) Cherche le pere avec nouveau N° FAMS:[$FAMS_SUIVANTE]"
          local findID
-         individu:search retID "ficGedcom=[$ficGedcom]?Qui=[${QUI_PARENT}]?uri=[${lien_pere}]?getParent=[0]?getEpoux=[0]?getFrere=[0]?getEnfant=[0]?numFamille=[0]"
+         individu:search retID "ficGedcom=[$ficGedcom]&Qui=[${QUI_PARENT}]&uri=[${lien_pere}]&getParent=[0]&getEpoux=[0]&getFrere=[0]&getEnfant=[0]&numFamille=[0]"
          local retCode="$?"
          if [[ "$retCode" -gt 299 ]]; then
             clean_fichier_temporaire "$KeyID"
@@ -168,7 +168,7 @@ htpm:getParent() {
             [[ "$nbDesc" -gt 0 ]] && nbDesc=$(( nbDesc - 1 ))
             return "$retCode"
          fi
-         [[ "$retCode" -eq "$CODE_DEJA_TRAITE" ]] && KeyID_Pere=$(KeyID:get "$retID") || KeyID_Pere=$retID
+         [[ "$retCode" -eq "$INDI_DEJA_TRAITE" ]] && KeyID_Pere=$(KeyID:get "$retID") || KeyID_Pere=$retID
          log:info "($IdFct) I@$KeyID_Pere@ est le père de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
       fi
 
@@ -187,4 +187,118 @@ get_page_html_epoux() {
       sed '/^$/d' |
       sed -e "s/&nbsp;/ /g" -e "s/^ *//g" -e 's/^<img style=.* alt="H">//g' >$fic_tmp_enfant
    log:info "fin get_page_html_enfant()"
+}
+
+
+html:get:nom() {
+   pre="${TMP_DIR}/gen_$(printf "%04d" "$1")"
+   local fic_tmp_all="${pre}_all_page"
+
+   log:info "$1 fic_tmp_all:[$fic_tmp_all]"
+   local _zone=$(sed '1,/^<\/head>/d' "$fic_tmp_all" | grep -n "extend(true, keys.elements," | sed -e 's/^.*$.extend(true, keys.elements, //g' -e 's/);$//g')
+   echo "$_zone" | jq --raw-output '.gntGeneweb.person.lastname' 2>/dev/null
+}
+
+html:get:prenom() {
+   pre="${TMP_DIR}/gen_$(printf "%04d" "$1")"
+   local fic_tmp_all="${pre}_all_page"
+
+   log:info "$1 fic_tmp_all:[$fic_tmp_all]"
+   local _zone=$(sed '1,/^<\/head>/d' "$fic_tmp_all" | grep -n "extend(true, keys.elements," | sed -e 's/^.*$.extend(true, keys.elements, //g' -e 's/);$//g')
+   echo "$_zone" | jq --raw-output '.gntGeneweb.person.firstname' 2>/dev/null
+}
+
+html:get:sex() {
+   pre="${TMP_DIR}/gen_$(printf "%04d" "$1")"
+   local fic_tmp_all="${pre}_all_page"
+
+   log:info "$1 fic_tmp_all:[$fic_tmp_all]"
+   local _zone=$(sed '1,/^<\/head>/d' "$fic_tmp_all" | grep -n "extend(true, keys.elements," | sed -e 's/^.*$.extend(true, keys.elements, //g' -e 's/);$//g')
+   echo "$_zone" | jq --raw-output '.gntGeneweb.person.sex'
+}
+
+html:get:naissance:ville() {
+   local pre="${TMP_DIR}/gen_$(printf "%04d" "$1")"
+   local fic_tmp_all="${pre}_all_page"
+   local fic_tmp="${pre}_result"
+   labelNaissance="${pre}_date"
+   local _sex="$(html:get:sex "$1")"
+   local labelNaissance="" GEDCOM_naissance="" tgNaissance="" bj="" bm="" by="" bj_Fin="" bm_Fin="" by_Fin="" villeNaissance="" julienNaissance=""
+
+   case "$_sex" in
+      "0") labelNaissance="$LG_BORN_M";;
+      "1") labelNaissance="$LG_BORN_F";;
+      "2") labelNaissance="$LG_BORN_X";;
+      *) return $ERROR;;
+   esac
+   log:info "DEB KeyID:[$1] _sex:[$_sex] labelNaissance:[$labelNaissance]"
+   sed -e "1,/^<!--  Portrait -->/d" -e "/^<!-- Parents /,10000d" -e "s/&nbsp;/ /g" -e "/^$/d" "$fic_tmp_all" | sed -e "1,/^<ul>/d" -e "/^<\/ul>/,10000d" | grep "<li" > "$fic_tmp"
+   date:get "$fic_tmp" "$labelNaissance" GEDCOM_naissance tgNaissance bj bm by bj_Fin bm_Fin by_Fin villeNaissance julienNaissance
+   echo "$villeNaissance"
+   rm "$fic_tmp" 2>/dev/null
+}
+
+
+html:get:naissance() {
+   local pre="${TMP_DIR}/gen_$(printf "%04d" "$1")"
+   local fic_tmp_all="${pre}_all_page"
+   local fic_tmp="${pre}_result"
+   labelNaissance="${pre}_date"
+   local _sex="$(html:get:sex "$1")"
+   local labelNaissance="" GEDCOM_naissance="" tgNaissance="" bj="" bm="" by="" bj_Fin="" bm_Fin="" by_Fin="" villeNaissance="" julienNaissance=""
+
+   case "$_sex" in
+      "0") labelNaissance="$LG_BORN_M";;
+      "1") labelNaissance="$LG_BORN_F";;
+      "2") labelNaissance="$LG_BORN_X";;
+      *) return $ERROR;;
+   esac
+   log:info "DEB KeyID:[$1] _sex:[$_sex] labelNaissance:[$labelNaissance]"
+   sed -e "1,/^<!--  Portrait -->/d" -e "/^<!-- Parents /,10000d" -e "s/&nbsp;/ /g" -e "/^$/d" "$fic_tmp_all" | sed -e "1,/^<ul>/d" -e "/^<\/ul>/,10000d" | grep "<li" > "$fic_tmp"
+   date:get "$fic_tmp" "$labelNaissance" GEDCOM_naissance tgNaissance bj bm by bj_Fin bm_Fin by_Fin villeNaissance julienNaissance
+   echo "$GEDCOM_naissance"
+   rm "$fic_tmp" 2>/dev/null
+}
+
+html:get:deces() {
+   local pre="${TMP_DIR}/gen_$(printf "%04d" "$1")"
+   local fic_tmp_all="${pre}_all_page"
+   local fic_tmp="${pre}_result"
+   labelNaissance="${pre}_date"
+   local _sex="$(html:get:sex "$1")"
+   local label="" GEDCOM="" tg="" bj="" bm="" by="" bj_Fin="" bm_Fin="" by_Fin="" ville="" julien=""
+
+   case "$_sex" in
+      "0") lbDeces="$LG_DEAD_M";;
+      "1") lbDeces="$LG_DEAD_F";;
+      "2") lbDeces="$LG_DEAD_X";;
+      *) return $ERROR;;
+   esac
+   log:info "DEB KeyID:[$1] _sex:[$_sex] labelNaissance:[$labelNaissance]"
+   sed -e "1,/^<!--  Portrait -->/d" -e "/^<!-- Parents /,10000d" -e "s/&nbsp;/ /g" -e "/^$/d" "$fic_tmp_all" | sed -e "1,/^<ul>/d" -e "/^<\/ul>/,10000d" | grep "<li" > "$fic_tmp"
+   date:get "$fic_tmp" "$lbDeces" GEDCOM tg bj bm by bj_Fin bm_Fin by_Fin ville ville
+   echo "$GEDCOM"
+   rm "$fic_tmp" 2>/dev/null
+}
+
+
+html:get:ville() {
+   local pre="${TMP_DIR}/gen_$(printf "%04d" "$1")"
+   local fic_tmp_all="${pre}_all_page"
+   local fic_tmp="${pre}_result"
+   labelNaissance="${pre}_date"
+   local _sex="$(html:get:sex "$1")"
+   local label="" GEDCOM="" tg="" bj="" bm="" by="" bj_Fin="" bm_Fin="" by_Fin="" ville="" julien=""
+
+   case "$_sex" in
+      "0") lbDeces="$LG_DEAD_M";;
+      "1") lbDeces="$LG_DEAD_F";;
+      "2") lbDeces="$LG_DEAD_X";;
+      *) return $ERROR;;
+   esac
+   log:info "DEB KeyID:[$1] _sex:[$_sex] labelNaissance:[$labelNaissance]"
+   sed -e "1,/^<!--  Portrait -->/d" -e "/^<!-- Parents /,10000d" -e "s/&nbsp;/ /g" -e "/^$/d" "$fic_tmp_all" | sed -e "1,/^<ul>/d" -e "/^<\/ul>/,10000d" | grep "<li" > "$fic_tmp"
+   date:get "$fic_tmp" "$lbDeces" GEDCOM tg bj bm by bj_Fin bm_Fin by_Fin ville ville
+   echo "$ville"
+   rm "$fic_tmp" 2>/dev/null
 }

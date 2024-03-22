@@ -38,6 +38,7 @@ LG_MOIS_12="December"
 
 LB_MARIE="Married"
 LB_MARIE_AVEC=" to "
+LB_ENFANT_AVEC="with"
 LB_RELATION="Relationship"
 LB_RELATION_AVEC=" with "
 LB_FIANCE="Engaged"

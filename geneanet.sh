@@ -46,11 +46,12 @@ trap 'traperror $? $LINENO $BASH_LINENO "$BASH_COMMAND" $(printf "::%s" ${FUNCNA
 
 SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/var.sh"
+source "${SCRIPT_DIR}/file.sh"
 source "${SCRIPT_DIR}/log.sh"
 source "${SCRIPT_DIR}/date.sh"
 source "${SCRIPT_DIR}/cache.sh"
-source "${SCRIPT_DIR}/cherche_indi.sh"
 source "${SCRIPT_DIR}/cherche_html.sh"
+source "${SCRIPT_DIR}/cherche_indi.sh"
 source "${SCRIPT_DIR}/cherche_source.sh"
 source "${SCRIPT_DIR}/cherche_note.sh"
 source "${SCRIPT_DIR}/write_indi.sh"
@@ -79,6 +80,7 @@ recupFichierFamille() {
    for fic in "$rep/FAM_"*; do
       cat "$fic" >> "$ficGCOM"
    done
+   ged:finalize
 }
 
 
@@ -130,6 +132,7 @@ auth_tmp_dir() {
    fic_id="${TMP_DIR}/KeyID"
    fic_id_exist="${fic_id}_exist"
    fic_id_link="${fic_id}_link"
+   fic_id_parent="${fic_id}_parent"
    fic_fam="${TMP_DIR}/FamID"
    return 0
 }
@@ -199,6 +202,9 @@ main() {
                   ;;
                no-note)
                   OPT_NOTE=0
+                  ;;
+               no-date)
+                  OPT_DATE=0
                   ;;
                cache=*)
                   DIR_CACHE=${OPTARG#*=}
@@ -317,18 +323,16 @@ main() {
    fi
 
 
-   rm -rf "${TMP_DIR}" 2>/dev/null 1>&2 || true
-   mkdir ${TMP_DIR} 2>/dev/null 1>&2 || true
-
    uri=$(echo "$url_param" | sed -e 's/https...gw.geneanet.org.//g' | sed -e "s/lang=../lang=${language}/g")
 
    if [[ ! -f "${fic_id}" ]]; then
       echo "0" > "${fic_id}"
    fi
-   touch "$fic_id_exist"
-   touch "$fic_id_link"
+   echo -n "" > "$fic_id_exist"
+   echo -n "" > "$fic_id_link"
+   echo -n "" > "$fic_id_parent"
    echo "$numFAMS" > "${fic_fam}"
-   touch "$fic_gedcom"
+   echo -n "" > "$fic_gedcom"
 
    init_cnx
    log:info "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant] ch_Frere:[$ch_Frere] numFAMS:[$numFAMS]"
@@ -337,9 +341,14 @@ main() {
 #   bckOpt="/tmp/.gen.lock.$$"
 #   save "fic=[$bckOpt]?tmp=[$TMP_DIR]?ged=[$fic_gedcom]?url=[$url_param]"
 #   instance
-   individu:search retID "ficGedcom=[$fic_gedcom]?Qui=[${QUI_PARENT}]?uri=[${uri}]?getParent=[${ch_Parent}]?getEpoux=[${ch_Epoux}]?getFrere=[${ch_Frere}]?getEnfant=[${ch_Enfant}]?numFamille=[${numFAMS}]"
-   recupFichierFamille "$TMP_DIR" "$fic_gedcom"
-   echo "Traitement terminé"
+   individu:search retID "ficGedcom=[$fic_gedcom]&KeyIDApple=[0]&Qui=[${QUI_PARENT}]&uri=[${uri}]&getParent=[${ch_Parent}]&getEpoux=[${ch_Epoux}]&getFrere=[${ch_Frere}]&getEnfant=[${ch_Enfant}]&numFamille=[${numFAMS}]"
+   retCode="$?"
+   if [[ "$retCode" -eq 0 ]]; then
+      ged:finalize "$TMP_DIR" "$fic_gedcom"
+      echo "Traitement terminé"
+   else
+      echo "Traitement terminé en erreur"
+   fi
 }
 
 main "$@"

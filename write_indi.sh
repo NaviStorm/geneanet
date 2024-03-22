@@ -3,7 +3,7 @@ ged:init() {
    local filename="${ficGCOM##*/}"
    local user=$(grep user "${fic_config}" | sed -e 's/user.*=//g' -e 's/ //g' -e "s/'//g")
 
-   {
+   file:write "$ficGCOM" "$(
       echo "0 HEAD"
       echo "1 SOUR geneanet.sh"
       echo "2 VERS 0.5.6"
@@ -12,18 +12,28 @@ ged:init() {
       echo "2 DATA ${user}.gwb"
       echo "1 FILE ${filename}"
       echo "1 CHAR UTF-8"
-      } > "$ficGCOM"
+      )"
 }
 
+
+ged:finalize() {
+   local rep="$1"
+   local ficGCOM="$2"
+
+   cat "$rep/ID_"* "$rep/FAM_"* > "$ficGCOM"
+   file:write "$ficGCOM" "0 TRLR"
+}
+
+
 ged:filename() {
-   local KeyID="$1"
-   echo "${TMP_DIR}/ID_$(printf "%.5d" $KeyID)"
+   echo "${TMP_DIR}/ID_$(printf "%.5d" "$1")"
 }
 
 
 ged:write() {
    local numID="$1"
    local param="$2"
+   local _nb=0
    local KeyID nom prenom sex noteIndividu dateNaissance VilleNaissance sourceNnaissance noteNaissance dateDeces villeDeces srcDeces noteDeces fams
 
    ficCOM=$(ged:filename "$numID")
@@ -52,8 +62,10 @@ ged:write() {
       [[ "$noteIndividu" != "" ]] && echo "  1 NOTE $noteIndividu" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$srcIndividu" != "" ]] && echo "  1 SOUR $srcIndividu" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$fams" != "" ]] && echo "  1 FAMS @F$fams@"
-      [[ "$famc" != "" ]] && echo "  1 FAMC @F$famc@"
-
+      if [[ "$famc" != "" ]]; then
+         _nb=$(grep -c "  1 FAMC @" $ficCOM )
+          [[ "$_nb" -eq 0 ]] && echo "  1 FAMC @F$famc@"
+      fi
       [[ -n "$dateNaissance" || -n "$sourceNnaissance" || -n "$noteNaissance" || -n "$VilleNaissance" ]] && echo "  1 BIRT"
       [[ -n "$dateNaissance"  ]] && echo " $dateNaissance"
       [[ -n "$VilleNaissance"  ]] && echo "  2 PLAC $VilleNaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
@@ -69,25 +81,12 @@ ged:write() {
 }
 
 
-ged:initialize() {
-   local ficGCOM="$1"
-   {
-      echo "0 HEAD"
-      echo "1 SOUR geneanet.sh"
-      echo "2 VERS 0.5.6"
-      echo "2 NAME gwb2ged"
-      echo "3 ADDR Lyon, France"
-      echo "2 DATA fichier.gwb"
-      echo "1 FILE fichier.ged"
-   } > "$ficGCOM"
-}
-
 ged:finalize() {
    local rep="$1"
    local ficGCOM="$2"
 
    log:info "rep:[$rep] ficGCOM:[$ficGCOM]"
-   for fic in $rep/ID_*; do
+   for fic in "$rep"/ID_*; do
       cat "$fic" >> "$ficGCOM"
    done
 
@@ -97,34 +96,31 @@ ged:finalize() {
 }
 
 
-fam:rm() {
-   local nFAMS="$1" 
-   local ficCOM=""
+famille:rm() {
+   local _fic=""
 
-   ficCOM=$(fam:filename "$nFAMS")
-   rm "$ficCOM"
+   _fic=$(famille:filename "$1")
+   rm "$_fic" 2>/dev/null
    return "$?"
 }
 
-fam:filename() {
-   local nFAMS="$1"
-
-   echo "${TMP_DIR}/FAM_$(printf "%.5d" $nFAMS)"
+famille:filename() {
+   echo "${TMP_DIR}/FAM_$(printf "%.5d" "$1")"
 }
 
 
 getParam() {
    local key="$1"
    local value="$2"
+   local _value=""
 
-   # ged:write "$KeyID" "KeyID=[$KeyID]&nom=[$nom]&prenom=[$prenom]&sex=[$sex]&source_individu=[$srcIndi]&note_individu=[$noteIndi]"
-   # ]&note_deces=[
-   echo "$value" | grep "$key=\[" | sed -e "s/^$key=\[//g" |  sed -e "s/^.*\]&$key=\[//g" | sed -e "s/\]&.*$//g" | sed -e "s/\]$//g"
+   # format possible &key=[] &key:[] ?key=[] ?key=[]
+   echo "$value" | grep "&$key\(:\|=\)\|^$key\(:\|=\)" | sed -e "s/^$key=\[//g" |  sed -e "s/^.*\][&?]$key=\[//g" | sed -e "s/\][&?].*$//g" | sed -e "s/\]$//g"
 }
 
-fam:write() {
+famille:write() {
    local param="$1"
-   local KeyID=0 Married="1" sex="N" nFAMS=0 labelTypeEpoux="" GEDCOM_mariage="" villeMariage="" noteMariage=""  GEDCOM_divorce="" villeDivorce="" noteDivorce="" nChild="" ficCOM="" nbEpoux=0
+   local KeyID=0 Married="1" sex="N" nFAMS=0 labelTypeEpoux="" GEDCOM_mariage="" villeMariage="" noteMariage=""  GEDCOM_divorce="" villeDivorce="" noteDivorce="" nChild="" ficCOM="" nbEpoux=0 KeyID_Conjoint=""
 
    KeyID=$(getParam "KeyID" "$param")
    sex=$(getParam "sex" "$param")
@@ -137,6 +133,7 @@ fam:write() {
    noteDivorce=$(getParam "note_divorce" "$param")
    nChild=$(getParam "child" "$param")
    Married=$(getParam "Married" "$param")
+   KeyID_Conjoint=$(echo "$param" | grep -i "KeyIDApple=" | sed -e 's/^.*KeyIDApple=\[//' -e 's/\].*$//g')
 
 
    if [[ -z "$nFAMS" ]]; then
@@ -144,7 +141,7 @@ fam:write() {
       quitter 1
       return 1
    fi
-   ficCOM=$(fam:filename "$nFAMS")
+   ficCOM=$(famille:filename "$nFAMS")
 
    log:info "DEB ficCOM:[$ficCOM] Param:[$param]"
 
@@ -154,16 +151,20 @@ fam:write() {
       log:info "Initialisation fichier [$ficCOM]"
       echo "0 @F${nFAMS}@ FAM" >> "$ficCOM"
    fi
-
+   
    if [[ "$Married" == "0" ]]; then
       echo "  1 EVEN" >> "$ficCOM"
       echo "  2 TYPE unmarried" >> "$ficCOM"
+   else
+      local _nb=$(grep "  1 MAR\|unmarried" "$ficCOM" 2>/dev/null | wc -l | bc)
+      [[ $_nb -eq 0 ]] && file:write "$ficCOM" "  1 MAR"  
+      #echo "  1 MAR" >> "$ficCOM"
    fi
-   
-   if [[ -n "$sex" ]]; then
-      if [[ "$sex" == "M" ]]; then
+
+   if [[ -n "$sex" ]]; then      
+      if [[ "$sex" == "M" || "$sex" == "0" ]]; then
          labelTypeEpoux="HUSB @I$KeyID@"
-      elif [[ "$sex" == "F" ]]; then
+      elif [[ "$sex" == "F" || "$sex" == "1" ]]; then
          labelTypeEpoux="WIFE @I$KeyID@"
       else
          labelTypeEpoux="INCO @I$KeyID@"
@@ -172,9 +173,22 @@ fam:write() {
       # Si sex est renseigné, le KeyID doit m'être aussi
       [[ -n "$sex" && -z "$KeyID" ]] && return 1
 
+      # Si sex est renseigné, le KeyID doit m'être aussi
+      [[ -n "$sex" && -n "$KeyID" && -z "$KeyID_Conjoint" ]] && return 1
+
+      # Je verifie que le fichier FAM n'existe pas déjà
+      # KeyID_Conjoint peut aussi être l'enfant mais pas de problème dans ce cas
+      if [[ -n "$sex" && -n "$KeyID" && -n "$KeyID_Conjoint" ]]; then
+         # famille:search "$KeyID" "$KeyID_Conjoint" 2>/dev/null 1>&2
+         famille:search "pere=[$KeyID]&mere=[$KeyID_Conjoint]" 2>/dev/null 1>&2
+         retCode="$?"
+         log:info "retour famille:search $KeyID $KeyID_Conjoint retCode:[$retCode]"
+         [[ "$retCode" == "$FAMILY_EXIST" ]] && return 1
+      fi
       # Je recherche la personne si elle est déjà dans le fihcier FAMS
       # Recherche "WIFE I@KeyID@" ou "HUSB I@KeyID@"
       grep "\(WIFE \|HUSB \|INCO \)@I$KeyID@" "$ficCOM" 2>/dev/null 1>&2
+
       [[ "$?" -eq 0 ]] && return 0
 
       nbEpoux=$(grep "HUSB\|WIFE\|INCO" "$ficCOM" | wc -l | bc)
@@ -184,47 +198,59 @@ fam:write() {
       fi
 
       log:info "Ecriture dans fichier nFAMS ${nFAMS} $labelTypeEpoux"
-      echo "  1 $labelTypeEpoux" >> "$ficCOM"
+      file:write "$ficCOM" "  1 $labelTypeEpoux"
+      # echo "  1 $labelTypeEpoux" >> "$ficCOM"
       return 0
    fi
-   [[ -n "$GEDCOM_mariage" ]] && echo " $GEDCOM_mariage" >> "$ficCOM"
-   [[ -n "$villeMariage" ]] && echo "  2 PLAC $villeMariage" >> "$ficCOM"
-   [[ -n "$noteMariage" ]] && echo "  2 NOTE $noteMariage" >> "$ficCOM"
+   [[ -n "$GEDCOM_mariage" ]] && file:write "$ficCOM" " $GEDCOM_mariage"
+   [[ -n "$villeMariage" ]] && file:write "$ficCOM" "  2 PLAC $villeMariage"
+   [[ -n "$noteMariage" ]] && file:write "$ficCOM" "  2 NOTE $noteMariage"
 
-   [[ -n "$GEDCOM_divorce" || -n "$villeDivorce" || -n "$noteDivorce" ]] && echo "  1 DIV" >> "$ficCOM"
-   [[ -n "$GEDCOM_divorce" ]] && echo " $GEDCOM_divorce" >> "$ficCOM"
-   [[ -n "$villeDivorce" ]] && echo "  2 PLAC $villeDivorce" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" >> "$ficCOM"
-   [[ -n "$noteDivorce" ]] && echo "  2 NOTE $noteDivorce" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" >> "$ficCOM"
+   [[ -n "$GEDCOM_divorce" || -n "$villeDivorce" || -n "$noteDivorce" ]] && file:write "$ficCOM" "  1 DIV"
+   [[ -n "$GEDCOM_divorce" ]] && file:write "$ficCOM" " $GEDCOM_divorce"
+   [[ -n "$villeDivorce" ]] && file:write "$ficCOM" "$(echo "  2 PLAC $villeDivorce" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g")"
+   [[ -n "$noteDivorce" ]] && file:write "$ficCOM" "$(echo "  2 NOTE $noteDivorce" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g")"
 
    if [[ -n "$nChild" ]]; then
-      labelTypeEpoux="  1 CHIL @I$nChild@"
-      existeDeja=$(grep "$labelTypeEpoux"  "$ficCOM" | wc -l | bc)
-      log:info "Recherche $labelTypeEpoux dans fichier famille existeDeja:[$existeDeja]"
+      existeDeja=$(grep "  1 CHIL @I$nChild@"  "$ficCOM" | wc -l | bc)
+      log:info "Recherche [  1 CHIL @I$nChild@] dans fichier famille existeDeja:[$existeDeja]"
       if [[ "$existeDeja" -eq 1 ]]; then
             log:info "Cette enfant (@I$nChild@) est déjà dans le fichier Famille [$nFAMS]"
             return 1
       fi
-      echo "  1 CHIL @I$nChild@" >> "$ficCOM"
+      file:write "$ficCOM" "  1 CHIL @I$nChild@"
+      # J'écris dans le fichier individu le numero de famille
+      ged:write "$nChild" "famc=[$nFAMS]"
+      return 0
    fi
 }
 
-fam:search() {
-   local _pere="$1" _mere="$2"
-   local _numFamille=0
+famille:search() {
+   local _enfant="" _pere="" _mere="" _numFamille=""
 
-   #_numFamille=$(grep -l "1 HUSB @I$_pere@\|1 WIFE @I$_pere@\|1 INCO @I$_pere@" "$TMP_DIR/FAM_"* | xargs grep -l "1 HUSB @I$_mere@\|1 WIFE @I$_mere@\|1 INCO @I$_mere@" | sed -e 's/^.*_//g' -e 's/^0*//')
-   _numFamille=$(grep -l "1 \(HUSB \|WIFE \|INCO \)@I$_pere" "$TMP_DIR/FAM_"* | xargs grep -l "1 \(HUSB \|WIFE \|INCO \)@I$_mere" | sed -e 's/^.*_//g' -e 's/^0*//')
+   _enfant=$(getParam "enfant" "$1")
+   _pere=$(getParam "pere" "$1")
+   _mere=$(getParam "mere" "$1")
+
+   log:info "_enfant:[$_enfant] _pere:[$_pere] _mere:[$_mere]"
+   [[ $_enfant -eq 3 ]] && cat $TMP_DIR/FAM_* 1>&2
+   if [[ -n "$_enfant" ]]; then
+      _numFamille=$(grep -l "1 CHIL.*${_enfant}" $TMP_DIR/FAM_* | sed -e 's/^.*_//g' -e 's/^0*//')
+   else
+      _numFamille=$(grep -l "1 \(HUSB \|WIFE \|INCO \)@I$_pere@" "$TMP_DIR/FAM_"* | xargs grep -l "1 \(HUSB \|WIFE \|INCO \)@I$_mere@" | sed -e 's/^.*_//g' -e 's/^0*//')
+   fi
+
+   log:info "Famille trouvé : [$_numFamille]"
    if [[ -z "$_numFamille" ]]; then
-      log:error "pas de famille trouvé pour ID_1[$_pere] et ID_2:[$_mere]"
       echo ""
-      return 1
+      return $FAMILY_NO_EXIST
    fi
    echo "$_numFamille"
-   return 0
+   return $FAMILY_EXIST
 }
 
 
-fam:whithout_spouse() {
+famille:whithout_spouse() {
       local KeyID="$1"
       local Conjoint="$2"
       local ficFAM=""

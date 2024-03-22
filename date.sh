@@ -171,8 +171,8 @@ determine_lable_date() {
 }
 
 
-trouver_date() {
-   trace_trouver_date="true"
+date:get() {
+   trace_date_get="true"
    local fic="$1"
    local dt_label_date="$2"
    local dt_fic_tmp="${TMP_DIR}/gen_date_${RANDOM}${RANDOM}"
@@ -188,15 +188,17 @@ trouver_date() {
    local NoDate=0
    local dtJulien=0
    local strNull=""
-
+   optSed=""
 
    log:info "fic:[$fic] dt_label_date:[$dt_label_date]"
-   sed -e "s/<em>//g" -e "s/<\/em>//g" -e "s/<\/i>//g" -e "s/<i>//g"  -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' "$fic"  | sed -e 's/\//CHARSLASH/g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
-
+   sed -e "s/<em>//g" -e "s/<\/em>//g" -e "s/<\/i>//g" -e "s/<i>//g"  -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' -e "s/ [0-9]\{1,\}, /&@/" -e "s/, @/ - /g" "$fic"  | sed -e "s/([^)]*)//g" -e 's/\//CHARSLASH/g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
+   cat "$dt_fic_tmp"
+   [[ "$OSTYPE" == *"arwin"* ]] && optSed="-i ''" || optSed='-i'
+   sed  $optSed -e "s/ Julian ([^)]*)//g" -e "s/Julian -/-/g" -e "s/e&nbsp;/ /g" -e "s/<em>//g" -e "s/<\/em>//g" "$fic"
    # Si date Julien, je ne fais aucun traitement et je la retourne 
    # dans paramètre $12 pour la mettre dans la note 
-   dtJulien=$(cat $dt_fic_tmp | grep " Julian (" | wc -l | bc)
-
+#   dtJulien=$(cat $dt_fic_tmp | grep " Julian (" | wc -l | bc)
+   dtJulien=0
    nbLigne=$(cat $dt_fic_tmp | wc -l | bc)
    log:info "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
    if [[ "$nbLigne" -ne 0  && "$dtJulien" -eq 0 ]]; then
@@ -242,27 +244,12 @@ trouver_date() {
       else
          dt_ville=$(sed -e "s/^.*${dt_label_date},//g" -e "s/^.*${dt_label_date} - //g" -e "s/^ *//g"  -e "s/CHARSLASH/\//g" "$dt_fic_tmp")
       fi
-      log:info "trouver_date() dt_naissance:[$dt_naissance] dt_tag[$dt_tag] dt_label_date:[$dt_label_date] dt_ville:[$dt_ville]"
+      log:info "date:get() dt_naissance:[$dt_naissance] dt_tag[$dt_tag] dt_label_date:[$dt_label_date] dt_ville:[$dt_ville]"
    fi
 
    eval "$3=\"$dt_naissance\""
-   eval "$4=\"$dt_tag\""
-   eval "$5=\"$dt_jour\""
-   eval "$6=\"$dt_mois\""
-   eval "$7=\"$dt_annee\""
-   if [[ $# -ne 8 ]]; then
-      eval "$8=\"$dt_jour_FIN\""
-      eval "$9=\"$dt_mois_FIN\""
-      eval "${10}=\"$dt_annee_FIN\""
-      eval "${11}=\"$dt_ville\""
-   else
-      eval "${8}=\"$dt_ville\""
-   fi
-   if [[ "$dtJulien" -ne 0 ]]; then
-      eval "${12}=\"$(cat $dt_fic_tmp)\""
-   else
-      eval "${12}=\"$strNull\""
-   fi
+   eval "${4}=\"$dt_ville\""
+   [[ "$dtJulien" -ne 0 ]] && eval "${5}=\"$(cat $dt_fic_tmp)\"" || eval "${5}=\"$strNull\""
    rm $dt_fic_tmp
 }
 
