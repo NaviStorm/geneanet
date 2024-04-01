@@ -192,7 +192,6 @@ date:get() {
 
    log:info "fic:[$fic] dt_label_date:[$dt_label_date]"
    sed -e "s/<em>//g" -e "s/<\/em>//g" -e "s/<\/i>//g" -e "s/<i>//g"  -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' -e "s/ [0-9]\{1,\}, /&@/" -e "s/, @/ - /g" "$fic"  | sed -e "s/([^)]*)//g" -e 's/\//CHARSLASH/g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
-   cat "$dt_fic_tmp"
    [[ "$OSTYPE" == *"arwin"* ]] && optSed="-i ''" || optSed='-i'
    sed  $optSed -e "s/ Julian ([^)]*)//g" -e "s/Julian -/-/g" -e "s/e&nbsp;/ /g" -e "s/<em>//g" -e "s/<\/em>//g" "$fic"
    # Si date Julien, je ne fais aucun traitement et je la retourne 
