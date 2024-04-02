@@ -64,18 +64,16 @@ incFAM() {
 
 
 KeyID:dec() {
-   local _fic_id="$1"
-   local _KeyID=$(($(cat $_fic_id) - 1))
-   echo "$_KeyID" >"$_fic_id"
-   eval "${2}=\"$_KeyID\"" 2>/dev/null
+   local _KeyID=$(($(cat $fic_id) - 1))
+   log:info "dec _KeyID:[$_KeyID]"
+   echo "$_KeyID" | tee "$fic_id"
 }
 
 
 KeyID:inc() {
-   local _fic_id="$1"
-   local _KeyID=$(($(cat $_fic_id) + 1))
-   echo "$_KeyID" >"$_fic_id"
-   eval "${2}=\"$_KeyID\"" 2>/dev/null
+   local _KeyID=$(($(cat $fic_id) + 1))
+   log:info "inc _KeyID:[$_KeyID]"
+   echo "$_KeyID" | tee "$fic_id"
 }
 
 
@@ -158,6 +156,8 @@ Index:Search() {
    _oc=$(getParam "oc" "$param"| sed -e 's/ /+/g')
    _uri=$(getParam "URI" "$param")
 
+   log:info "param:[$param]"
+   log:info "$KeyID [$_index] _lastname:[$_lastname] _firstname:[$_firstname] p:[$_p] n:[$_n] oc:[$_oc] sex:[$_sex]"
    if [[ -n "$KeyID" && -n "$_index" ]]; then
       grep "\[$_index\]" "$fic_id_exist" 2>/dev/null 1>&2
       UniqID=$(grep "\[$_index\]" "$fic_id_exist" | sed -e 's/ .*$//g')
@@ -171,7 +171,7 @@ Index:Search() {
          fi
          return $INDI_DEJA_TRAITE
       else
-         echo "$KeyID [$_index] _lastname:[$_lastname] _firstname:[$_firstname] p:[$_p] n:[$_n]" oc:[$_oc] sex:[$_sex] >> "$fic_id_exist"
+         echo "$KeyID [$_index] _lastname:[$_lastname] _firstname:[$_firstname] p:[$_p] n:[$_n] oc:[$_oc] sex:[$_sex]" >> "$fic_id_exist"
          return 0
       fi
    elif [[ -n "$_p" && -n "$_n" ]]; then
@@ -223,7 +223,7 @@ descendance:dec() {
 #   $5 : Chercher les epoux
 #   $6 : Chercher les freres
 #   $7 : Chercher les enfants
-#   $8 : numero FAMS
+
 individu:search( ) {
    export tab="$tab   "
    local param="$2"
@@ -321,10 +321,11 @@ individu:search( ) {
    nom=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.lastname' 2>/dev/null)
    prenom=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.firstname' 2>/dev/null)
    id_p=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.p')
-   id_n=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.p')
+   id_n=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.n')
    id_oc=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.oc')
    sex=$(echo "$_zone" | jq --raw-output '.gntGeneweb.person.sex')
 
+   parent:search "enfant=[$KeyID]"
    # Je regarde si l'individu est déjà traité
    Index:Search "KeyID=[$KeyID]&index=[$id_index]&nom=[$nom]&prenom=[$prenom]&sex=[$sex]&p=[$id_p]&n=[$id_n]&oc=[$id_oc]"
    local retCode="$?"

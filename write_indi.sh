@@ -233,7 +233,6 @@ famille:search() {
    _mere=$(getParam "mere" "$1")
 
    log:info "_enfant:[$_enfant] _pere:[$_pere] _mere:[$_mere]"
-   [[ $_enfant -eq 3 ]] && cat $TMP_DIR/FAM_* 1>&2
    if [[ -n "$_enfant" ]]; then
       _numFamille=$(grep -l "1 CHIL.*${_enfant}" $TMP_DIR/FAM_* | sed -e 's/^.*_//g' -e 's/^0*//')
    else
