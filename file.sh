@@ -1,8 +1,8 @@
 file:get() {
    local _p=""
 
-   eval _p=$pattern
-   printf $_p $@
+   eval _p="$pattern"
+   printf "$_p" "$@"
 }
 
 vartype() {

@@ -11,10 +11,12 @@ cache:filename(){
    local _link="" NbFicCache=0
    local _ficCache=""
 
+   log:info "$_uri" >&2
    _link=$(cache:uri_to_link "$_uri")
    NbFicCache=$(grep "\[${_link}\]" "${FIC_CACHE}" | wc -l | bc)
    [[ "$NbFicCache" -ne 1 ]] && return 1
    _ficCache=$(grep "\[${_link}\]" "${FIC_CACHE}" | sed -e 's/^.*f:\[//g' -e 's/\].*$//g' -e "s/\$HOME/$(echo $HOME|sed -e 's/\//\\\//g')/g")
+   log:info "$_ficCache" >&2
    echo "$_ficCache"
    return 0
 }
@@ -26,14 +28,17 @@ cache:exist() {
    local _link="" NbFicCache=0
    local _ficCache=""
 
+   log:info "$_uri" >&2
    _link=$(cache:uri_to_link "$_uri")
    NbFicCache=$(grep "\[${_link}\]" "${FIC_CACHE}" | wc -l | bc)
 
    if [[ "$NbFicCache" -eq 1 ]]; then
       _ficCache=$(grep "\[${_link}\]" "${FIC_CACHE}" | sed -e 's/^.*f:\[//g' -e 's/\].*$//g' -e "s/\$HOME/$(echo "$HOME"|sed -e 's/\//\\\//g')/g")
       sha256sum "${DIR_CACHE}/$_ficCache" | sed -e 's/ .*$//g'
+      log:info "[$_uri] [$_link] page exist" >&2
       return 1
    else
+      log:info "[$_uri][$_link] page not exist" >&2
       echo ""
       return 0
    fi
@@ -45,6 +50,7 @@ cache:get(){
    local _fic="$2"
    local _ficCache="" sha256sum=""
 
+   log:info "$_uri" >&2
    sha256sum=$(cache:exist "$_uri")
    retCode="$?"
 #   [[ "$retCode" -eq 0 ]] && log:info "$_uri n'est pas en cache" || log:info "$_uri est en cache"
@@ -85,13 +91,14 @@ cache:put(){
 
    local sha256_cache="" sha256_fic="" 
    
+   log:info "$_uri" >&2
    nameFic="$(uuidgen | tr '[:upper:]' '[:lower:]').gz"
    sha256_cache=$(cache:exist "${_uri}")
    retCode="$?"
    [[ "$retCode" -eq 1 ]] && log:info "Cette page [${_uri}] est déjà dans le cache" || log:info "Cette page [${_uri}] n'est pas dans le cache"
    [[ "$retCode" -eq 1 && "$force" == "false" ]] && return 0
 
-   if [[ -n "$sha256_cache" ]]; then
+   if [[ "$retCode" -eq 1 ]]; then
       log:info "Page dans le cache, je vérifie le sha256sum"
       sha256_fic=$(sha256sum "$_fic" | sed -e 's/ .*$//g')
       if [[ "$sha256_cache" == "$sha256_fic" ]]; then
@@ -99,12 +106,14 @@ cache:put(){
          return 0
       fi
       log:info "sha256_cache:[$sha256_cache] sha256_fic:[$sha256_fic]"
-      gzip -c "$_fic"  > "${DIR_CACHE}/$nameFic"
-#      cp "${_fic}" "$nameFic" 2>/dev/null 1>&2
+      nameFic=$(cache:filename "$_uri")
+      gzip -c $_fic  > ${DIR_CACHE}/$nameFic
       retCode="$?"
-      [[ "$retCode" -ne 0 ]] && log:info "Mise a jour du cache" || log:info "Erreur de copie, pas de mise a jour du cache"
+      [[ "$retCode" -eq 0 ]] && log:info "Mise a jour du cache" || log:info "Erreur de copie, pas de mise a jour du cache [$retCode]"
+      [[ "$retCode" -eq 0 ]] && return 0 || return $retCode
    else
       log:info "Pas dans le cache, je copie [$_fic] dans [${DIR_CACHE}/$nameFic]"
+      log:info "Après cache:filename  [${DIR_CACHE}/$nameFic]" >&2
       gzip -c "$_fic"  > "${DIR_CACHE}/$nameFic"
 #      cp "${_fic}" "${nameFic}" 2>/dev/null 1>&2
 #      cp "${_fic}" "${nameFic}" 2>/dev/null 1>&2

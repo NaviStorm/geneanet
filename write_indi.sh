@@ -30,11 +30,17 @@ ged:filename() {
 }
 
 
+ged:print:multiligne() {
+   local _lig=$(echo "$1" | sed -e 's/^/  2 NOTE /g' -e 's/@n@/\n  3 CONT /g') 
+   echo "$_lig"
+}
+
+
 ged:write() {
    local numID="$1"
    local param="$2"
    local _nb=0
-   local KeyID nom prenom sex noteIndividu dateNaissance VilleNaissance sourceNnaissance noteNaissance dateDeces villeDeces srcDeces noteDeces fams
+   local KeyID nom prenom sex noteIndividu dateNaissance VilleNaissance sourceNnaissance noteNaissance dateDeces villeDeces srcDeces noteDeces dateBapteme villeBapteme noteBapteme occupation fams
 
    ficCOM=$(ged:filename "$numID")
 
@@ -43,22 +49,32 @@ ged:write() {
    nom=$(getParam "nom" "$param")
    prenom=$(getParam "prenom" "$param")
    sex=$(getParam "sex" "$param")
-   srcIndividu=$(getParam "source_individu" "$param")
    noteIndividu=$(getParam "note_individu" "$param")
+   srcIndividu=$(getParam "source_individu" "$param")
+   occupation=$(getParam "occupation" "$param")
+
    dateNaissance=$(getParam "date_naissance" "$param")
    VilleNaissance=$(getParam "ville_naissance" "$param")
    sourceNnaissance=$(getParam "source_naissance" "$param")
    noteNaissance=$(getParam "note_naissance" "$param")
+
    dateDeces=$(getParam "date_deces" "$param")
    villeDeces=$(getParam "ville_deces" "$param")
    srcDeces=$(getParam "source_deces" "$param")
    noteDeces=$(getParam "note_deces" "$param")
+
+   dateBapteme=$(getParam "date_bapteme" "$param")
+   VilleBapteme=$(getParam "ville_bapteme" "$param")
+   srcBapteme=$(getParam "source_bapteme" "$param")
+   noteBapteme=$(getParam "note_bapteme" "$param")
    fams=$(getParam "fams" "$param")
    famc=$(getParam "famc" "$param")
+
    {
       [[ "$KeyID" != "" ]] && echo "0 @I$KeyID@ INDI"
       [[ "$prenom" != "" || "$nom" != "" ]] && echo "  1 NAME $prenom /$nom/" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$sex" != "" ]] && echo "  1 SEX $sex"
+      [[ "$occupation" != "" ]] && echo "  1 OCCU $occupation"
       [[ "$noteIndividu" != "" ]] && echo "  1 NOTE $noteIndividu" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$srcIndividu" != "" ]] && echo "  1 SOUR $srcIndividu" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$fams" != "" ]] && echo "  1 FAMS @F$fams@"
@@ -69,13 +85,22 @@ ged:write() {
       [[ -n "$dateNaissance" || -n "$sourceNnaissance" || -n "$noteNaissance" || -n "$VilleNaissance" ]] && echo "  1 BIRT"
       [[ -n "$dateNaissance"  ]] && echo " $dateNaissance"
       [[ -n "$VilleNaissance"  ]] && echo "  2 PLAC $VilleNaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
-      [[ -n "$noteNaissance"  ]] && echo "  2 NOTE $noteNaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+#      [[ -n "$noteNaissance"  ]] && echo "  2 NOTE $noteNaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+      [[ -n "$noteNaissance"  ]] && ged:print:multiligne "$noteNaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ -n "$sourceNnaissance"  ]] && echo "  2 SOUR $sourceNnaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+
+      [[ -n "$dateBapteme" || -n "$sourceBapteme" || -n "$noteBapteme" || -n "$VilleBapteme" ]] && echo "  1 BAPM"
+      [[ -n "$dateBapteme"  ]] && echo " $dateBapteme"
+      [[ -n "$VilleBapteme"  ]] && echo "  2 PLAC $VilleBapteme" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+#      [[ -n "$noteBapteme"  ]] && echo "  2 NOTE $noteBapteme" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+      [[ -n "$noteBapteme"  ]] && ged:print:multiligne "$noteBapteme" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+      [[ -n "$srcBapteme"  ]] && echo "  2 SOUR $srcBapteme" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
 
       [[ -n "$dateDeces" || -n "$villeDeces" || -n "$noteDeces" || -n "$srcDeces" ]] && echo "  1 DEAT"
       [[ -n "$dateDeces" ]] && echo " $dateDeces"
       [[ "$villeDeces" != "" ]] && echo "  2 PLAC $villeDeces" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
-      [[ "$noteDeces" != "" ]] && echo "  2 NOTE $noteDeces" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+#      [[ "$noteDeces" != "" ]] && echo "  2 NOTE $noteDeces" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+      [[ "$noteDeces" != "" ]] && ged:print:multiligne "$noteDeces" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$srcDeces" != "" ]] && echo "  2 SOUR $srcDeces" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
    } >> "$ficCOM"
 }
@@ -120,7 +145,7 @@ getParam() {
 
 famille:write() {
    local param="$1"
-   local KeyID=0 Married="1" sex="N" nFAMS=0 labelTypeEpoux="" GEDCOM_mariage="" villeMariage="" noteMariage=""  GEDCOM_divorce="" villeDivorce="" noteDivorce="" nChild="" ficCOM="" nbEpoux=0 KeyID_Conjoint=""
+   local KeyID=0 KeyID_pere=0 KeyID_mere=0 Married="1" sex="N" nFAMS=0 labelTypeEpoux="" GEDCOM_mariage="" villeMariage="" noteMariage=""  GEDCOM_divorce="" villeDivorce="" noteDivorce="" nChild="" ficCOM="" nbEpoux=0 KeyID_Conjoint="" Qui=""
 
    KeyID=$(getParam "KeyID" "$param")
    sex=$(getParam "sex" "$param")
@@ -133,34 +158,46 @@ famille:write() {
    noteDivorce=$(getParam "note_divorce" "$param")
    nChild=$(getParam "child" "$param")
    Married=$(getParam "Married" "$param")
-   KeyID_Conjoint=$(echo "$param" | grep -i "KeyIDApple=" | sed -e 's/^.*KeyIDApple=\[//' -e 's/\].*$//g')
-
+   Qui=$(getParam "Qui" "$param")
+   if [[ "$Qui" != "$CONJOINT" ]]; then
+      KeyID_Conjoint=$(echo "$param" | grep -i "KeyIDApple=" | sed -e 's/^.*KeyIDApple=\[//' -e 's/\].*$//g')
+   fi
+   KeyID_pere=$(getParam "pere" "$param")
+   KeyID_mere=$(getParam "mere" "$param")
 
    if [[ -z "$nFAMS" ]]; then
       log:error " Le numero de famille est obligatoire Param:[$param]"
       quitter 1
-      return 1
+      return $ERROR
    fi
+   [[ "$nFAMS" -eq 0 ]] && return $ERROR
+   log:info "DEB ficCOM:[$ficCOM] Param:[$param]"
    ficCOM=$(famille:filename "$nFAMS")
 
-   log:info "DEB ficCOM:[$ficCOM] Param:[$param]"
+   if [[ -n "$nChild" && -n "$KeyID_pere" && -n "$KeyID_mere" ]]; then
+      famille:search "pere=[$KeyID]&mere=[$KeyID_Conjoint]" 2>/dev/null 1>&2
+      retCode="$?"
+      log:info "retour famille:search Param:[$param]"
+      if [[ "$retCode" == "$FAMILY_EXIST" ]]; then 
+         log:info "La famille existe Param:[$param]"
+         return $FAMILY_EXIST
+      else
+         log:info "Initialisation fichier [$ficCOM]"
+         file:write "$ficCOM" "0 @F${nFAMS}@ FAM"
+         file:write "$ficCOM" "  1 MAR"
+         file:write "$ficCOM" "  1 HUSB @I$KeyID_pere@"
+         file:write "$ficCOM" "  1 WIFE @I$KeyID_mere@"
+         file:write "$ficCOM" "  1 CHIL @I$nChild@"
+         return 0
+      fi
+   fi
 
-   [[ "$nFAMS" -eq 0 ]] && exit 0
    # Initialisation du fichier Famille
    if [[ ! -f "$ficCOM" ]]; then
       log:info "Initialisation fichier [$ficCOM]"
       echo "0 @F${nFAMS}@ FAM" >> "$ficCOM"
    fi
    
-   if [[ "$Married" == "0" ]]; then
-      echo "  1 EVEN" >> "$ficCOM"
-      echo "  2 TYPE unmarried" >> "$ficCOM"
-   else
-      local _nb=$(grep "  1 MAR\|unmarried" "$ficCOM" 2>/dev/null | wc -l | bc)
-      [[ $_nb -eq 0 ]] && file:write "$ficCOM" "  1 MAR"  
-      #echo "  1 MAR" >> "$ficCOM"
-   fi
-
    if [[ -n "$sex" ]]; then      
       if [[ "$sex" == "M" || "$sex" == "0" ]]; then
          labelTypeEpoux="HUSB @I$KeyID@"
@@ -173,17 +210,19 @@ famille:write() {
       # Si sex est renseigné, le KeyID doit m'être aussi
       [[ -n "$sex" && -z "$KeyID" ]] && return 1
 
-      # Si sex est renseigné, le KeyID doit m'être aussi
-      [[ -n "$sex" && -n "$KeyID" && -z "$KeyID_Conjoint" ]] && return 1
+      if [[ -n $KeyID_Conjoint ]]; then
+         # Si sex est renseigné, le KeyID doit m'être aussi
+         [[ -n "$sex" && -n "$KeyID" && -z "$KeyID_Conjoint" ]] && return 1
 
-      # Je verifie que le fichier FAM n'existe pas déjà
-      # KeyID_Conjoint peut aussi être l'enfant mais pas de problème dans ce cas
-      if [[ -n "$sex" && -n "$KeyID" && -n "$KeyID_Conjoint" ]]; then
-         # famille:search "$KeyID" "$KeyID_Conjoint" 2>/dev/null 1>&2
-         famille:search "pere=[$KeyID]&mere=[$KeyID_Conjoint]" 2>/dev/null 1>&2
-         retCode="$?"
-         log:info "retour famille:search $KeyID $KeyID_Conjoint retCode:[$retCode]"
-         [[ "$retCode" == "$FAMILY_EXIST" ]] && return 1
+         # Je verifie que le fichier FAM n'existe pas déjà
+         # KeyID_Conjoint peut aussi être l'enfant mais pas de problème dans ce cas
+         if [[ -n "$sex" && -n "$KeyID" && -n "$KeyID_Conjoint" ]]; then
+            # famille:search "$KeyID" "$KeyID_Conjoint" 2>/dev/null 1>&2
+            famille:search "pere=[$KeyID]&mere=[$KeyID_Conjoint]" 2>/dev/null 1>&2
+            retCode="$?"
+            log:info "retour famille:search $KeyID $KeyID_Conjoint retCode:[$retCode]"
+            [[ "$retCode" == "$FAMILY_EXIST" ]] && return 1
+         fi
       fi
       # Je recherche la personne si elle est déjà dans le fihcier FAMS
       # Recherche "WIFE I@KeyID@" ou "HUSB I@KeyID@"
@@ -202,15 +241,28 @@ famille:write() {
       # echo "  1 $labelTypeEpoux" >> "$ficCOM"
       return 0
    fi
-   [[ -n "$GEDCOM_mariage" ]] && file:write "$ficCOM" " $GEDCOM_mariage"
-   [[ -n "$villeMariage" ]] && file:write "$ficCOM" "  2 PLAC $villeMariage"
-   [[ -n "$noteMariage" ]] && file:write "$ficCOM" "  2 NOTE $noteMariage"
 
-   [[ -n "$GEDCOM_divorce" || -n "$villeDivorce" || -n "$noteDivorce" ]] && file:write "$ficCOM" "  1 DIV"
-   [[ -n "$GEDCOM_divorce" ]] && file:write "$ficCOM" " $GEDCOM_divorce"
-   [[ -n "$villeDivorce" ]] && file:write "$ficCOM" "$(echo "  2 PLAC $villeDivorce" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g")"
-   [[ -n "$noteDivorce" ]] && file:write "$ficCOM" "$(echo "  2 NOTE $noteDivorce" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g")"
+   if [[ -n "$GEDCOM_mariage" || -n "$villeMariage" || -n "$noteMariage" ]]; then
+      if [[ "$Married" == "0" ]]; then
+         echo "  1 EVEN" >> "$ficCOM"
+         echo "  2 TYPE unmarried" >> "$ficCOM"
+      else
+         local _nb=$(grep "  1 MAR\|unmarried" "$ficCOM" 2>/dev/null | wc -l | bc)
+         [[ $_nb -eq 0 ]] && file:write "$ficCOM" "  1 MARR"  
+         #echo "  1 MAR" >> "$ficCOM"
+      fi
+      [[ -n "$GEDCOM_mariage" ]] && file:write "$ficCOM" " $GEDCOM_mariage"
+      [[ -n "$villeMariage" ]] && file:write "$ficCOM" "  2 PLAC $villeMariage"
+      [[ -n "$noteMariage" ]] && file:write "$ficCOM" "  2 NOTE $noteMariage"
+   fi
 
+   if [[ -n "$GEDCOM_divorce" || -n "$villeDivorce" || -n "$noteDivorce" ]]; then
+      file:write "$ficCOM" "  1 DIV"
+      [[ -n "$GEDCOM_divorce" ]] && file:write "$ficCOM" " $GEDCOM_divorce"
+      [[ -n "$villeDivorce" ]] && file:write "$ficCOM" "$(echo "  2 PLAC $villeDivorce" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g")"
+      [[ -n "$noteDivorce" ]] && file:write "$ficCOM" "$(echo "  2 NOTE $noteDivorce" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g")"
+   fi
+   
    if [[ -n "$nChild" ]]; then
       existeDeja=$(grep "  1 CHIL @I$nChild@"  "$ficCOM" | wc -l | bc)
       log:info "Recherche [  1 CHIL @I$nChild@] dans fichier famille existeDeja:[$existeDeja]"
@@ -266,3 +318,5 @@ famille:whithout_spouse() {
 
 
 
+TRACE="true"
+ged:print:multiligne "ligne1@n@Ligne23@n@Dernière ligne"

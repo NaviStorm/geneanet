@@ -10,7 +10,6 @@ NOM_SCRIPT=$(basename "$0")
 USER_GENEANET=""
 NUMBER='^[0-9]+$'
 nbAppel=0
-
 # Pattern pour les nom de fichier
 pattern="\$TMP_DIR/gen_%04d_%s"
 
@@ -27,7 +26,7 @@ TMP_DIR="/tmp/geneanet"
 
 DIR_CACHE="${HOME}/geneanet_cache"
 FIC_CACHE="${DIR_CACHE}/cache"
-declare -i OPT_CACHE=1 OPT_SOURCE=1 OPT_NOTE=1 OPT_DATE=1
+declare -i OPT_CACHE=1 OPT_SOURCE=1 OPT_NOTE=1 OPT_DATE=1 UPDATE_CACHE=1
 
 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
 user_agent="Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"

@@ -188,25 +188,23 @@ date:get() {
    local NoDate=0
    local dtJulien=0
    local strNull=""
-   optSed=""
 
    log:info "fic:[$fic] dt_label_date:[$dt_label_date]"
-   sed -e "s/<em>//g" -e "s/<\/em>//g" -e "s/<\/i>//g" -e "s/<i>//g"  -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' -e "s/ [0-9]\{1,\}, /&@/" -e "s/, @/ - /g" "$fic"  | sed -e "s/([^)]*)//g" -e 's/\//CHARSLASH/g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
-   [[ "$OSTYPE" == *"arwin"* ]] && optSed="-i ''" || optSed='-i'
-   sed  $optSed -e "s/ Julian ([^)]*)//g" -e "s/Julian -/-/g" -e "s/e&nbsp;/ /g" -e "s/<em>//g" -e "s/<\/em>//g" "$fic"
+   sed -e "s/<em>//g" -e "s/<\/em>//g" -e "s/<\/i>//g" -e "s/<i>//g"  -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' "$fic"  | sed -e "s/([^)]*)//g" -e 's/\//CHARSLASH/g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
+   sed  -i -e "s/ Julian ([^)]*)//g" -e "s/Julian -/-/g" -e "s/e&nbsp;/ /g" -e "s/<em>//g" -e "s/<\/em>//g" "$fic"
    # Si date Julien, je ne fais aucun traitement et je la retourne 
    # dans paramètre $12 pour la mettre dans la note 
 #   dtJulien=$(cat $dt_fic_tmp | grep " Julian (" | wc -l | bc)
    dtJulien=0
    nbLigne=$(cat $dt_fic_tmp | wc -l | bc)
-   log:info "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
+   log:debug "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
    if [[ "$nbLigne" -ne 0  && "$dtJulien" -eq 0 ]]; then
          local ville=$(sed "s/^$dt_label_date.* [1-2][0-9][0-9][0-9],//g" "$dt_fic_tmp" | grep -v "$dt_label_date")
       if [[ "$dt_label_date" == "$LG_MARIED_M" ]]; then
          local ville=$(sed "s/^$dt_label_date.* [1-2][0-9][0-9][0-9],//g" "$dt_fic_tmp" | grep -v "$dt_label_date")
          [[ -n "$ville" ]] && echo "$(sed -e "s/$ville.*$//g" "$dt_fic_tmp" | sed -e "s/,$//g" ) - $ville" >  "$dt_fic_tmp"
       fi
-      log:info "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
+      log:debug "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
 
       # String contain only the town & not the date of the event
       # Ex: Married, Lyon, France

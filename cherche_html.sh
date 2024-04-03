@@ -1,41 +1,62 @@
 trace_cherche_html="true"
 
 init_label() {
-   local init_label_type_sex=$1
-   local init_label_sex
-   local init_label_labelNaissance
-   local init_label_labelDeces
-   local init_label_labelMarie
-   local init_label_TypeEpoux
+   local _sex=$1
+   local lb_sex
+   local lb_Naissance
+   local lb_Deces
+   local lb_Epoux
+   local lb_TypeEpoux
 
-   log:info "init_label() PARAM init_label_type_sex:[$init_label_type_sex]"
-   if [[ "$init_label_type_sex" == "0" ]]; then
-      init_label_sex="M"
-      init_label_labelNaissance="$LG_BORN_M"
-      init_label_labelDeces="$LG_DEAD_M"
-      init_label_labelMarie="$LG_MARIED_M"
-      init_label_TypeEpoux="HUSB"
-   elif [[ "$init_label_type_sex" == "1" ]]; then
-      init_label_sex="F"
-      init_label_labelNaissance="$LG_BORN_F"
-      init_label_labelDeces="$LG_DEAD_F"
-      init_label_labelMarie="$LG_MARIED_F"
-      init_label_TypeEpoux="WIFE"
-   elif [[ "$init_label_type_sex" == "2" ]]; then
-      init_label_sex="U"
-      init_label_labelNaissance="$LG_BORN_X"
-      init_label_labelDeces="$LG_DEAD_X"
-      init_label_labelMarie="$LG_MARIED_X"
-      init_label_TypeEpoux="HUSB"
-   fi
+   log:info "init_label() PARAM _sex:[$_sex]"   
+   case "$_sex" in
+      "0")
+         lb_sex="M"
+         lb_Naissance="$LG_BORN_M"
+         lb_Deces="$LG_DEAD_M"
+         lb_Epoux="$LG_MARIED_M"
+         lb_TypeEpoux="HUSB"
+         lb_Baptise="$LG_BAPTISE"
+         ;;
+      "1")
+         lb_sex="F"
+         lb_Naissance="$LG_BORN_F"
+         lb_Deces="$LG_DEAD_F"
+         lb_Epoux="$LG_MARIED_F"
+         lb_TypeEpoux="WIFE"
+         lb_Baptise="$LG_BAPTISE"
+         ;;
+      "2")
+         lb_sex="U"
+         lb_Naissance="$LG_BORN_X"
+         lb_Deces="$LG_DEAD_X"
+         lb_Epoux="$LG_MARIED_X"
+         lb_TypeEpoux="HUSB"
+         lb_Baptise="$LG_BAPTISE"
+         ;;
+      *)
+         return $ERROR
+         ;;
+   esac
 
-   log:info "init_label_type_sex:[$init_label_type_sex] init_label_sex:[$init_label_sex] init_label_labelNaissance:[$init_label_labelNaissance] init_label_labelDeces:[$init_label_labelDeces] init_label_labelMarie:[$init_label_labelMarie]"
-   eval "$2=\"$init_label_sex\""
-   eval "$3=\"$init_label_labelNaissance\""
-   eval "$4=\"$init_label_labelDeces\""
-   eval "$5=\"$init_label_labelMarie\""
-   eval "$6=\"$init_label_TypeEpoux\""
+   log:info "_sex:[$_sex] lb_sex:[$lb_sex] lb_Naissance:[$lb_Naissance] lb_Deces:[$lb_Deces] lb_Epoux:[$lb_Epoux] lb_Baptise:[$lb_Baptise]"
+   echo "sex=[$lb_sex]&naissance=[$lb_Naissance]&deces=[$lb_Deces]&epoux=[$lb_Epoux]&type=[$lb_TypeEpoux]&baptise=[$lb_Baptise]"
    return
+}
+
+
+html:clean() {
+   local _fic="$1"
+   local _fic_temp="/tmp/$$"
+
+   cat "$_fic" |\
+      sed -e "s/(.*<a href=\"#.*)//g"  |\
+      sed -E "s/($LB_JOUR)//g" |\
+      sed -e 's/<a  href=/<a href=/g' -e 's/\\u00e0/à/g' -e 's/\\u00e2/â/g' -e 's/\\u00e4/ä/g' -e 's/\\u00e7/ç/g' -e 's/\\u00e8/è/g' -e 's/\\u00e9/é/g' -e 's/\\u00ea/ê/g' -e 's/\\u00eb/ë/g' -e 's/\\u00ee/î/g' |\
+      sed -e 's/\\u00ef/ï/g' -e 's/\\u00f4/ô/g' -e 's/\\u00f6/ö/g' -e 's/\\u00f9/ù/g' -e 's/\\u00fb/û/g' -e 's/\\u00fc/ü/g' |\
+      sed '/^$/d' |\
+      sed -e 's/ <bdo.*\/bdo>//g' -e "s/ Julian ([^)]*)//g" -e "s/Julian -/-/g" -e "s/ Julian,/,/g" -e "s/&nbsp;/ /g" -e "s/<em>//g" -e "s/<\/em>//g" > "$_fic_temp"
+   mv -f $_fic_temp $_fic
 }
 
 
@@ -52,12 +73,7 @@ html:curl() {
          -H 'Referer: '"$url/$uri&type=tree" \
          -H $"Cookie: $COOKIES" \
          -H "User-Agent: $user_agent" -A "$user_agent" --user-agent "$user_agent" \
-         --compressed 2>"$fic_error" |\
-         sed -e "s/(.*<a href=\"#.*)//g"  |\
-         sed -E "s/($LB_JOUR)//g" |\
-         sed -e 's/<a  href=/<a href=/g' -e 's/\\u00e0/à/g' -e 's/\\u00e2/â/g' -e 's/\\u00e4/ä/g' -e 's/\\u00e7/ç/g' -e 's/\\u00e8/è/g' -e 's/\\u00e9/é/g' -e 's/\\u00ea/ê/g' -e 's/\\u00eb/ë/g' -e 's/\\u00ee/î/g' |\
-         sed -e 's/\\u00ef/ï/g' -e 's/\\u00f4/ô/g' -e 's/\\u00f6/ö/g' -e 's/\\u00f9/ù/g' -e 's/\\u00fb/û/g' -e 's/\\u00fc/ü/g' |\
-         sed '/^$/d' > "$fic_tmp_all"
+         --compressed 2>"$fic_error" > "$fic_tmp_all"
       retCodeCurl="$?"
 
       retCodeServer=$(grep "HTTP/2 " "$fic_error" | sed -e "s/^.*HTTP\/2 //g" | tr -d $'\r' |bc)
@@ -72,9 +88,9 @@ html:curl() {
          log:info "   Erreur curl, je tente encore apres une pause de 5 sec retCodeCurl:[$retCodeCurl] retCodeServer:[$retCodeServer]"
          sleep 60
       else
-         if [[ "$OPT_CACHE" -eq 1 ]]; then
+         if [[ "$UPDATE_CACHE" -eq 1 ]]; then
             log:info "Mise en cache de la page [$uri]"
-            cache:put "$uri" "$fic_tmp_all" "false"
+            cache:put "$uri" "$fic_tmp_all" "true"
             if [[ "$?" -ne 0 ]]; then 
                log:info "Retour curl:put, erreur lors de la mise en cache de la page"
             fi
@@ -114,9 +130,6 @@ html:get() {
             tab:dec
             return 1
          fi
-      else
-         log:debug "utilisation du cache pour [$uri]"
-         return 0
       fi
    fi
 
@@ -127,6 +140,8 @@ html:get() {
       tab:dec
       return 1
    fi
+
+   html:clean "$fic_tmp_all"
    log:info "FIN"
    tab:dec
    return 0
@@ -160,15 +175,12 @@ htpm:getParent() {
       else
          log:info "($IdFct) Cherche le pere avec nouveau N° FAMS:[$FAMS_SUIVANTE]"
          local findID
-         individu:search retID "ficGedcom=[$ficGedcom]&Qui=[${QUI_PARENT}]&uri=[${lien_pere}]&getParent=[0]&getEpoux=[0]&getFrere=[0]&getEnfant=[0]&numFamille=[0]"
+         KeyID_Pere=$(individu:search "ficGedcom=[$ficGedcom]&Qui=[${QUI_PARENT}]&uri=[${lien_pere}]&getParent=[0]&getEpoux=[0]&getFrere=[0]&getEnfant=[0]&numFamille=[0]")
          local retCode="$?"
          if [[ "$retCode" -gt 299 ]]; then
             clean_fichier_temporaire "$KeyID"
-            [[ "$nbAsc" -gt 0 ]] && nbAsc=$(( nbAsc - 1 ))
-            [[ "$nbDesc" -gt 0 ]] && nbDesc=$(( nbDesc - 1 ))
             return "$retCode"
          fi
-         [[ "$retCode" -eq "$INDI_DEJA_TRAITE" ]] && KeyID_Pere=$(KeyID:get "$retID") || KeyID_Pere=$retID
          log:info "($IdFct) I@$KeyID_Pere@ est le père de I@$KeyID@ Pour la famille FAMS:[$FAMS_SUIVANTE]"
       fi
 

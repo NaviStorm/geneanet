@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 
 
 #### ./geneanet.sh "https://gw.geneanet.org/egarciat?lang=fr&iz=0&p=maria+magdalena+rita&n=amat+mira" 24 ""
@@ -104,7 +104,18 @@ usage() {
 }
 
 prerequis() {
-   lstBin="jq bc tr cat sed grep rm wc dirname basename uuidgen"
+   # GNU Util
+   lstBin="jq bc tr cat sed grep rm wc dirname basename"
+   for bin in $lstBin; do
+#      which "$bin" 2>/dev/null 1>&2
+      $bin --version 2>/dev/null 1>&2
+      if [[ "$?" -ne 0 ]]; then
+         echo -e "usage: $(basename "$0")\n   $bin est necessaire, vous devez l'installer"
+         quitter 1
+      fi
+   done
+
+   lstBin="uuidgen"
    for bin in $lstBin; do
       which "$bin" 2>/dev/null 1>&2
       if [[ "$?" -ne 0 ]]; then
@@ -341,7 +352,7 @@ main() {
 #   bckOpt="/tmp/.gen.lock.$$"
 #   save "fic=[$bckOpt]?tmp=[$TMP_DIR]?ged=[$fic_gedcom]?url=[$url_param]"
 #   instance
-   individu:search retID "ficGedcom=[$fic_gedcom]&KeyIDApple=[0]&Qui=[${QUI_PARENT}]&uri=[${uri}]&getParent=[${ch_Parent}]&getEpoux=[${ch_Epoux}]&getFrere=[${ch_Frere}]&getEnfant=[${ch_Enfant}]&numFamille=[${numFAMS}]"
+   KeyID=$(individu:search "ficGedcom=[$fic_gedcom]&KeyIDApple=[0]&Qui=[${QUI_PARENT}]&uri=[${uri}]&getParent=[${ch_Parent}]&getEpoux=[${ch_Epoux}]&getFrere=[${ch_Frere}]&getEnfant=[${ch_Enfant}]&numFamille=[${numFAMS}]")
    retCode="$?"
    if [[ "$retCode" -eq 0 ]]; then
       ged:finalize "$TMP_DIR" "$fic_gedcom"

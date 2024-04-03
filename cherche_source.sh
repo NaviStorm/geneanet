@@ -22,7 +22,8 @@ source:edit() {
 
 source:get() {
     local _fic="$1"
-    local ficSource="${TMP_DIR}_source_$$"
+    local ficSource="${1}_source"
+#    local ficSource="${TMP_DIR}_source_$$"
 
     local _srcIndi="" _srcNaissance="" _srcUnion="" _srcDeces="" x_ligne="false" deb_ligne=0 fin_ligne=0
 
@@ -61,7 +62,7 @@ source:get() {
             fi
         fi
     done < "$ficSource"
-    rm "${ficSource}"
+#    rm "${ficSource}"
     log:debug "FIN g_srcIndi:[${g_srcIndi}] g_srcNaissance:[$g_srcNaissance] g_srcUnion:[$g_srcUnion] g_srcDeces:[$g_srcDeces]"
 }
 
