@@ -67,7 +67,7 @@ note:get() {
                 if [[ "$note" == "" ]]; then
                     note="$note_tmp"
                 else
-                    note="$note\n$note_tmp"
+                    note="$note@n@$note_tmp"
                 fi
                 # log:info "$type != \"\" note:[$note]"
                 deb_section=0
@@ -92,7 +92,7 @@ note:get:autre() {
     pre="${TMP_DIR}/gen_$(printf "%04d" "$KeyID")"
     local _fic=$(file:get $KeyID all_page)
     local _fic_note=$(file:get $KeyID autre_note)
-    sed -e '1,/^<!-- Timeline/d' -e '/<!-- notes/,10000d' "$_fic" -e '/<tr>/d' -e '/$<\/tr>$/d' -e '/^<td>$/d' -e '/^<\/td>$/d'  -e '/class="ddate/d' -e '/<br>/d' -e '/valign/d' -e '/show-for-/d' -e '/<\/p><\/div>/d' -e 's/<p>//g' -e 's/<\/tr>//g'> "$_fic_note"
+    sed -e '1,/^<!-- Timeline/d' -e '/<!-- notes/,10000d' -e '/<tr>/d' -e '/$<\/tr>$/d' -e '/^<td>$/d' -e '/^<\/td>$/d'  -e '/class="ddate/d' -e '/<br>/d' -e '/valign/d' -e '/show-for-/d' -e '/<\/p><\/div>/d' -e 's/<p>//g' -e 's/<\/tr>//g' "$_fic" > "$_fic_note"
     ifs=''
     span=0
     while read lig; do
@@ -161,6 +161,7 @@ note:get:autre() {
 
 main_cherche_note() {
     local TRACE="true"
+    log:active "1"
     local chrono="false"
     local KeyID="0001"
     local my_pid="${KeyID}_${RANDOM}_${RANDOM}"

@@ -35,6 +35,7 @@ LG_MOIS_10="octobre"
 LG_MOIS_11="novembre"
 LG_MOIS_12="décembre"
 
+LB_ENFANT_AVEC_HOMME="Avec " # Pas Marié/Relation mais avec des enfants ....
 LB_MARIE="Marié"
 LB_MARIE_AVEC=" Avec "
 LB_ENFANT_AVEC="Avec"

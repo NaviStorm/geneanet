@@ -30,11 +30,36 @@ ged:filename() {
 }
 
 
+
 ged:print:multiligne() {
-   local _lig=$(echo "$1" | sed -e 's/^/  2 NOTE /g' -e 's/@n@/\n  3 CONT /g') 
+   local typeNote="$2"
+   local nvNote="2" nvCont="3"
+   if [[ "$typeNote" == "indi" ]]; then
+      nvNote="1" 
+      nvCont="2"
+   fi
+   local _lig=$(echo "$1" | sed -e "s/^/  ${nvNote} NOTE /g" -e "s/@n@/\n  ${nvCont} CONT /g") 
    echo "$_lig"
 }
 
+
+ged:get() {
+   local numID="$1"
+   local key="$2"
+   local key_sep=""
+   local key_value=""
+
+   ficCOM=$(ged:filename "$numID")
+   [[ "$key" == "FAM"* ]] && key_sep="@"
+   if [[ -f $ficCOM ]]; then
+      key_value=$(grep "$key $key_sep" "$ficCOM" | sed -e "s/^.*$key $key_sep//g" -e "s/$key_sep.*$//g") 
+      echo -n "$key_value"
+   else
+      echo -n "$key_value"
+   fi
+   log:info "Return numID:[$numID] key:[$key] fams:[$key_value]"
+   return 0
+}
 
 ged:write() {
    local numID="$1"
@@ -70,12 +95,28 @@ ged:write() {
    fams=$(getParam "fams" "$param")
    famc=$(getParam "famc" "$param")
 
+   [[ "$famc" == "$fams" && "$fams" != "" ]] && log:error "famc:[$famc] ne peut être identique a fams:[$fams]"
+   if [[ "$fams" != "" && "$famc" == "" ]]; then
+      gedFamc=$(ged:get "$numID" "FAMC")
+      if [[ "$fams" == "$gedFamc" ]] then
+         log:error "[$ficCOM] fams:[$fams] ne peut être identique à FAMC dans le fichier ged:[$gedFamc]"
+         exit 0
+      fi
+   fi
+   if [[ "$famc" != "" && "$fams" == "" ]]; then
+      gedFams=$(ged:get "$numID" "FAMS")
+      if [[ "$fams" == "$gedFamc" ]]; then
+         log:error "[$ficCOM] famc:[$famc] ne peut être identique à FAMS dans le fichier ged:[$gedFams]"
+         exit 0
+      fi
+   fi
+
    {
       [[ "$KeyID" != "" ]] && echo "0 @I$KeyID@ INDI"
       [[ "$prenom" != "" || "$nom" != "" ]] && echo "  1 NAME $prenom /$nom/" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$sex" != "" ]] && echo "  1 SEX $sex"
       [[ "$occupation" != "" ]] && echo "  1 OCCU $occupation"
-      [[ "$noteIndividu" != "" ]] && echo "  1 NOTE $noteIndividu" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+      [[ "$noteIndividu" != "" ]] && ged:print:multiligne "$noteIndividu" "indi" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$srcIndividu" != "" ]] && echo "  1 SOUR $srcIndividu" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$fams" != "" ]] && echo "  1 FAMS @F$fams@"
       if [[ "$famc" != "" ]]; then
@@ -86,23 +127,24 @@ ged:write() {
       [[ -n "$dateNaissance"  ]] && echo " $dateNaissance"
       [[ -n "$VilleNaissance"  ]] && echo "  2 PLAC $VilleNaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
 #      [[ -n "$noteNaissance"  ]] && echo "  2 NOTE $noteNaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
-      [[ -n "$noteNaissance"  ]] && ged:print:multiligne "$noteNaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+      [[ -n "$noteNaissance"  ]] && ged:print:multiligne "$noteNaissance" "Birth" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ -n "$sourceNnaissance"  ]] && echo "  2 SOUR $sourceNnaissance" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
 
       [[ -n "$dateBapteme" || -n "$sourceBapteme" || -n "$noteBapteme" || -n "$VilleBapteme" ]] && echo "  1 BAPM"
       [[ -n "$dateBapteme"  ]] && echo " $dateBapteme"
       [[ -n "$VilleBapteme"  ]] && echo "  2 PLAC $VilleBapteme" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
 #      [[ -n "$noteBapteme"  ]] && echo "  2 NOTE $noteBapteme" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
-      [[ -n "$noteBapteme"  ]] && ged:print:multiligne "$noteBapteme" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+      [[ -n "$noteBapteme"  ]] && ged:print:multiligne "$noteBapteme" "Bapt" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ -n "$srcBapteme"  ]] && echo "  2 SOUR $srcBapteme" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
 
       [[ -n "$dateDeces" || -n "$villeDeces" || -n "$noteDeces" || -n "$srcDeces" ]] && echo "  1 DEAT"
       [[ -n "$dateDeces" ]] && echo " $dateDeces"
       [[ "$villeDeces" != "" ]] && echo "  2 PLAC $villeDeces" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
 #      [[ "$noteDeces" != "" ]] && echo "  2 NOTE $noteDeces" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
-      [[ "$noteDeces" != "" ]] && ged:print:multiligne "$noteDeces" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
+      [[ "$noteDeces" != "" ]] && ged:print:multiligne "$noteDeces" "Death" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
       [[ "$srcDeces" != "" ]] && echo "  2 SOUR $srcDeces" | sed -e "s/&#34;/\"/g" -e "s/&#39;/\'/g" 
    } >> "$ficCOM"
+   return 0
 }
 
 
@@ -273,6 +315,7 @@ famille:write() {
       file:write "$ficCOM" "  1 CHIL @I$nChild@"
       # J'écris dans le fichier individu le numero de famille
       ged:write "$nChild" "famc=[$nFAMS]"
+      [[ "$?" -ne 0 ]] && return 1
       return 0
    fi
 }
@@ -315,8 +358,3 @@ famille:whithout_spouse() {
       log:info "Trouvé Famille pour KeyID:[$KeyID] le [$nFAMS] sans Conjoint [$Conjoint]"
       eval "$3=\"$nFAMS\""
 }
-
-
-
-TRACE="true"
-ged:print:multiligne "ligne1@n@Ligne23@n@Dernière ligne"

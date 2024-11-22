@@ -1,3 +1,17 @@
+typeset -a _lst_user_agent=(
+"Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0)"
+"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"
+"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0"
+"Mozilla/5.0 (iPhone; CPU iPhone OS 15_0_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1"
+"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
+"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0"
+"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.2478.80"
+"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Vivaldi/6.7.3329.24"
+)
+declare -r user_agent="${_lst_user_agent[$(($RANDOM%6))]}"
+
 trace_cherche_html="true"
 
 init_label() {
@@ -61,12 +75,12 @@ html:clean() {
 
 
 html:curl() {
-   tab:inc
    local uri="$1"
    local fic_tmp_all="$2"
    local fic_error="${TMP_DIR}/curl_stderr_$$"
    local retCodeCurl=0 retCodeServer=0 nbCurl=0
 
+   log:info "COOKIES : [$COOKIES]"
    while true; do
       log:info "Appel curl($url/$uri&type=fiche)"
       curl -v -s "$url/$uri&type=fiche" \
@@ -82,7 +96,6 @@ html:curl() {
          if [[ "$nbCurl" -eq 5 ]]; then
             log:info "J'ai fait 5 tentative nbCurl[$nbCurl], je sors en erreur"
             rm "$fic_error" 2>/dev/null 1>&2
-            tab:dec
             return 1
          fi
          log:info "   Erreur curl, je tente encore apres une pause de 5 sec retCodeCurl:[$retCodeCurl] retCodeServer:[$retCodeServer]"
@@ -94,12 +107,12 @@ html:curl() {
             if [[ "$?" -ne 0 ]]; then 
                log:info "Retour curl:put, erreur lors de la mise en cache de la page"
             fi
+         else
+            log:info "Pas de mise en cache de la page [$uri]"
          fi
-         tab:dec
          return 0
       fi
    done
-   tab:dec
 }
 
 
@@ -118,7 +131,6 @@ html:get() {
    if [[ "$OPT_CACHE" -eq 0 ]]; then
       html:curl "$uri" "$fic_tmp_all"
       if [[ "$?" -ne 0 ]]; then
-         tab:dec
          return 1
       fi
    else
@@ -127,7 +139,6 @@ html:get() {
          log:info "Cette page [$uri] n'est pas en cache"
          html:curl "$uri" "$fic_tmp_all"
          if [[ "$?" -ne 0 ]]; then
-            tab:dec
             return 1
          fi
       fi
@@ -137,13 +148,11 @@ html:get() {
    if [[ "$nbRedirect" -eq 1 ]]; then
       rm "$fic_tmp_all" 2>/dev/null 1>&2
       log:info "ERREUR de redirection [$url/$uri&type=tree]"
-      tab:dec
       return 1
    fi
 
    html:clean "$fic_tmp_all"
    log:info "FIN"
-   tab:dec
    return 0
 }
 

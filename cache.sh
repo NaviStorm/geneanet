@@ -127,8 +127,6 @@ cache:put(){
          return 1
       fi
    fi
-   tab:dec
-quitter 0
    return 0
 }
 

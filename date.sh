@@ -191,7 +191,7 @@ date:get() {
 
    log:info "fic:[$fic] dt_label_date:[$dt_label_date]"
    sed -e "s/<em>//g" -e "s/<\/em>//g" -e "s/<\/i>//g" -e "s/<i>//g"  -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' "$fic"  | sed -e "s/([^)]*)//g" -e 's/\//CHARSLASH/g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
-   sed  -i -e "s/ Julian ([^)]*)//g" -e "s/Julian -/-/g" -e "s/e&nbsp;/ /g" -e "s/<em>//g" -e "s/<\/em>//g" "$fic"
+   sed -i $optSed -e "s/ Julian ([^)]*)//g" -e "s/Julian -/-/g" -e "s/e&nbsp;/ /g" -e "s/<em>//g" -e "s/<\/em>//g" "$fic"
    # Si date Julien, je ne fais aucun traitement et je la retourne 
    # dans paramètre $12 pour la mettre dans la note 
 #   dtJulien=$(cat $dt_fic_tmp | grep " Julian (" | wc -l | bc)

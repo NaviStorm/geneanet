@@ -1,13 +1,14 @@
-#SCRIPT_DIR=$(dirname "$0")
-#source "${SCRIPT_DIR}/var.sh"
+typeset -i _logging=0
+typeset -i _logging_debug=0
+typeset _logging_fmt="json"
+typeset _logging_chrono=""
 
 readini(){
    local _fic="$1"
    local _key="$2"
    local _value=""
+   local -i len=0
 
-
-   # !!6M@84!j$uej9454GQ4
    _value=$(cat "$_fic" | grep "^$_key" | sed -e "s/^$_key=//g" 2>/dev/null)
    if [[ ${_value:0:1} == "'"* || ${_value:0:1} == "\""* ]]; then
       len=$(( ${#_value} - 2 ))
@@ -17,49 +18,43 @@ readini(){
 }
 
 
-tab:init() {
-   echo "" > "/tmp/tab"
-}
-
-tab:inc() {
-   return 0
-   local tab=$(cat "/tmp/tab")   
-   echo -n "$tab   " > "/tmp/tab"
-}
-
-tab:dec() {
-   return 0
-   local tab=$(cat "/tmp/tab") 
-   local _tab=""
-
-   len=$((${#tab}))
-   [[ "$len" -ne 0 ]] && len=$(( len - 3 ))
-   _tab=$(printf "%${len}s" "")
-   echo -n "$_tab" > "/tmp/tab"
-}
-
-tab:get() {
-   echo ""
-   return 0
-   cat "/tmp/tab"
-}
-
-
 log:put() {
    local _level="$1"
-
    shift
-   echo "$_level $@" >&2
+
+   builtin echo "$_level $@" >&2
 }
 
 log:date() {
-   date "+%d/%m/%Y %T.%03N "  
+   date "+%Y-%m-%dT%T.%03N"  
+}
+
+
+log:active() {
+   typeset -i _ActiveLog="$1"
+   if (( _ActiveLog )) ; then
+      _logging=1
+   else
+      _logging=0
+   fi
+}
+
+
+log:debug:active() {
+   typeset -i _ActiveDebug="$1"
+   if (( _ActiveDebug )) ; then
+      _logging_debug=1
+   else
+      _logging_debug=0
+   fi
 }
 
 
 log:info() {
-   local idFct=""
-   local chrono=""
+   local _logging_chrono=""; _logging_chrono=$(date "+%Y-%m-%dT%T.%03N")
+   local _file=${BASH_SOURCE[1]##*/} _func=${FUNCNAME[1]} _line=${BASH_LINENO[0]} _lineAppelant=${BASH_LINENO[1]}
+   local _idFct=""; idFct=$(printf "%s" "${_logging_chrono} [${FUNCNAME[2]}:$_lineAppelant][$_func:$_line]")
+
 
    local src="" i=0
    # à partir de 1 car je ne veux pas l'info log:info:ligne
@@ -69,44 +64,50 @@ log:info() {
 #   done
 #   src="[$src]"
 
-   if [[ "$TRACE" == "true" ]]; then
-      [[ "$CHRONO" == "true" ]] && chrono=$(log:date)
-      local file=${BASH_SOURCE[1]##*/} func=${FUNCNAME[1]} line=${BASH_LINENO[0]} lineAppelant=${BASH_LINENO[1]}
-      #TRACE_SCRIPT=$(echo "TRACE_${file}" | tr A-Z a-z | sed -e "s/.sh$//g")
-      #TRACE_FUNCTION=$(echo "TRACE_${func}" | tr A-Z a-z  | sed -e 's/:/_/g')
-      #[[ "${!TRACE_FUNCTION}" == "false" ]] && return 0
-      #[[ "${!TRACE_SCRIPT}" == "false" ]] && return 0
-      idFct=$(printf "%s" "${chrono}[${FUNCNAME[2]}:$lineAppelant][$func:$line]")
-      log:put "[INFO] " "$idFct: $*"
-#      echo "${chrono}${file##*/}:$lineAppelant:$func:$line: $tab$*"
+   if (( _logging )); then
+      if [[ "$_logging_fmt" == "json" ]]; then
+         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"INFO\", \"src0\": \"${BASH_SOURCE[2]##*/}\",\"fct0\":\"${FUNCNAME[2]}\",\"line0\": \"${BASH_LINENO[1]}\", \"src\": \"${BASH_SOURCE[1]##*/}\",\"fct\": \"${FUNCNAME[1]}\",\"line\": \"${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
+      else
+         log:put "[INFO] " "$_idFct: $*"
+      fi
    fi
 }
 
 log:debug() {
-   local tab=$(tab:get)
-   local idFct=""
-   local chrono=""
-   
-   if [[ "$DEBUG" == "true" ]]; then
-      [[ "$CHRONO" == "true" ]] && chrono=$(log:date)
-      local file=${BASH_SOURCE[1]##*/} func=${FUNCNAME[1]} line=${BASH_LINENO[0]} lineAppelant=${BASH_LINENO[1]}
-      #TRACE_SCRIPT=$(echo "TRACE_${file}" | tr A-Z a-z | sed -e "s/.sh$//g")
-      #TRACE_FUNCTION=$(echo "TRACE_${func}" | tr A-Z a-z  | sed -e 's/:/_/g')
-      #[[ "${!TRACE_FUNCTION}" == "false" ]] && return 0
-      #[[ "${!TRACE_SCRIPT}" == "false" ]] && return 0
-      idFct=$(printf "%s" "${chrono}[${FUNCNAME[2]}:$lineAppelant][$func:$line]")
-      log:put "[DEBUG]" "$idFct: $*"
+   local _logging_chrono=""; _logging_chrono=$(date "+%Y-%m-%dT%T.%03N")
+   local _file=${BASH_SOURCE[1]##*/} _func=${FUNCNAME[1]} _line=${BASH_LINENO[0]} _lineAppelant=${BASH_LINENO[1]}
+   local _idFct=""; idFct=$(printf "%s" "${_logging_chrono} [${FUNCNAME[2]}:$_lineAppelant][$_func:$_line]")
+
+   if (( _logging_debug )); then
+      if [[ "$_logging_fmt" == "json" ]]; then
+         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"DEBUG\", \"src0\": \"${BASH_SOURCE[2]##*/}\",\"fct0\":\"${FUNCNAME[2]}\",\"line0\": \"${BASH_LINENO[1]}\", \"src\": \"${BASH_SOURCE[1]##*/}\",\"fct\": \"${FUNCNAME[1]}\",\"line\": \"${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
+      else
+         log:put "[DEBUG]" "$_idFct: $*"
+      fi
    fi
 }
 
 
 log:error() {
-   local tab=$(tab:get)
-   local idFct=""
+   local _logging_chrono=""; _logging_chrono=$(date "+%Y-%m-%dT%T.%03N")
+   local _file=${BASH_SOURCE[1]##*/} _func=${FUNCNAME[1]} _line=${BASH_LINENO[0]} _lineAppelant=${BASH_LINENO[1]}
+   local _idFct=""; idFct=$(printf "%s" "${_logging_chrono} [${FUNCNAME[2]}:$_lineAppelant][$_func:$_line]")
 
-   local file=${BASH_SOURCE[1]##*/} func=${FUNCNAME[1]} line=${BASH_LINENO[0]} lineAppelant=${BASH_LINENO[1]}
-   idFct=$(printf "%s" "[${FUNCNAME[2]}:$lineAppelant][$func:$line]")
-   log:put "[ERROR]" "$idFct: FATAL ERROR $*" >&2
+   if (( _logging_debug )); then
+      if [[ "$_logging_fmt" == "json" ]]; then
+         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"ERROR\", \"src0\": \"${BASH_SOURCE[2]##*/}\",\"fct0\":\"${FUNCNAME[2]}\",\"line0\": \"${BASH_LINENO[1]}\", \"src\": \"${BASH_SOURCE[1]##*/}\",\"fct\": \"${FUNCNAME[1]}\",\"line\": \"${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
+      else
+         log:put "[ERROR]" "$_idFct: $*"
+      fi
+   fi
+}
+
+log:errorOLD() {
+   local _logging_chrono=""; _logging_chrono=$(date "+%Y-%m-%dT%T.%03N")
+   local _file=${BASH_SOURCE[1]##*/} _func=${FUNCNAME[1]} _line=${BASH_LINENO[0]} _lineAppelant=${BASH_LINENO[1]}
+   local _idFct=""; idFct=$(printf "%s" "${_logging_chrono} [${FUNCNAME[2]}:$_lineAppelant][$_func:$_line]")
+
+   log:put "[ERROR]" "$_idFct: FATAL ERROR $*" >&2
    return 1
 }
 

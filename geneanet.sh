@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 
 
 #### ./geneanet.sh "https://gw.geneanet.org/egarciat?lang=fr&iz=0&p=maria+magdalena+rita&n=amat+mira" 24 ""
@@ -41,31 +41,28 @@ traperror() {
    quitter 1
 }
 
-trap 'traperror $? $LINENO $BASH_LINENO "$BASH_COMMAND" $(printf "::%s" ${FUNCNAME[@]})' ERR
+# trap 'traperror $? $LINENO $BASH_LINENO "$BASH_COMMAND" $(printf "::%s" ${FUNCNAME[@]})' ERR
 #   local file=${BASH_SOURCE[1]##*/} func=${FUNCNAME[1]} line=${BASH_LINENO[0]}
 
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/var.sh"
-source "${SCRIPT_DIR}/file.sh"
-source "${SCRIPT_DIR}/log.sh"
-source "${SCRIPT_DIR}/date.sh"
-source "${SCRIPT_DIR}/cache.sh"
-source "${SCRIPT_DIR}/cherche_html.sh"
-source "${SCRIPT_DIR}/cherche_indi.sh"
-source "${SCRIPT_DIR}/cherche_source.sh"
-source "${SCRIPT_DIR}/cherche_note.sh"
-source "${SCRIPT_DIR}/write_indi.sh"
-source "${SCRIPT_DIR}/${language}/const.sh"
+typeset _Src_name=${0##*/}
+typeset _Src_dir="${0%/*}" # dirname($0)
+for _Src_file in var file log date cache cherche_html cherche_enfant cherche_indi cherche_parent cherche_source cherche_note write_indi; do
+    source "${_Src_dir}/${_Src_file}.sh"
+done
+
+for _Src_file in const; do
+    source "${_Src_dir}/en/${_Src_file}.sh"
+done
 
 initialise_individu() {
    echo "0" > "${fic_id}"
 }
 
 init_cnx(){
-	log:debug "DEB fic_config:[$fic_config]"
+	log:info "DEB fic_config:[$fic_config]"
    USER_GENEANET=$(grep user "${fic_config}" | sed -e 's/user.*=//g' -e 's/ //g' -e "s/'//g")
    COOKIES=$(grep COOKIES "${fic_config}" | sed -e 's/^.*COOKIES=//g' -e "s/'//g")
-	log:debug "FIN"
+	log:info "FIN"
 }
 
 
@@ -84,7 +81,10 @@ recupFichierFamille() {
 }
 
 
-usage() {
+_Usage() {
+   printf "Usage:
+   ${_Src_name} [OPTIONS] <script_file>
+"
    echo "usage: $(basename "$0")"
    echo "   -u URL        : Lien url ver la famille a récupérer"
    echo "   -i            : Initialisation du N° de l'individu"
@@ -105,17 +105,17 @@ usage() {
 
 prerequis() {
    # GNU Util
-   lstBin="jq bc tr cat sed grep rm wc dirname basename"
+   lstBin="jq bc uuidgen tr cat sed grep rm wc dirname basename"
    for bin in $lstBin; do
-#      which "$bin" 2>/dev/null 1>&2
-      $bin --version 2>/dev/null 1>&2
+      which "$bin" 2>/dev/null 1>&2
+#      $bin --version 2>/dev/null 1>&2
       if [[ "$?" -ne 0 ]]; then
          echo -e "usage: $(basename "$0")\n   $bin est necessaire, vous devez l'installer"
          quitter 1
       fi
    done
 
-   lstBin="uuidgen"
+   lstBin="uuidgen tr"
    for bin in $lstBin; do
       which "$bin" 2>/dev/null 1>&2
       if [[ "$?" -ne 0 ]]; then
@@ -180,10 +180,9 @@ main() {
 
    local url_param=""
    local numFAMS=1
-   local fic_gedcom="${SCRIPT_DIR}/geneanet.ged"
+   local fic_gedcom="${_Src_dir}/geneanet.ged"
    local optchar
 
-   echo "" > "/tmp/tab"
    prerequis
    optspec=":u:ic:o:st:nvxhdv-:"
    while getopts "$optspec" optchar; do
@@ -207,6 +206,9 @@ main() {
                   ;;
                no-cache)
                   OPT_CACHE=0
+                  ;;
+               no-update-cache)
+                  UPDATE_CACHE=0
                   ;;
                no-source)
                   OPT_SOURCE=0
@@ -267,20 +269,20 @@ main() {
                   ;;
             esac;;
          h)
-            usage >&2
+            _Usage >&2
             quitter 2
             ;;
          o)
             fic_gedcom="${OPTARG}"
             ;;
          d)
-            DEBUG=true
+            log:debug:active 1
             ;;
          x)
             CHRONO=true
             ;;
          v)
-            TRACE=true
+            log:active 1
             ;;
          c)
             fic_config="$OPTARG"
@@ -311,7 +313,7 @@ main() {
          *)
             if [ "$OPTERR" != 1 ] || [ "${optspec:0:1}" = ":" ]; then
                echo "Non-option argument: '-${OPTARG}'" >&2
-               usage >&2
+               _Usage >&2
                quitter 0
             fi
             ;;
@@ -349,9 +351,6 @@ main() {
    log:info "uri:[$uri] ch_Parent:[$ch_Parent] ch_Epoux:[$ch_Epoux] ch_Frere:[$ch_Frere] ch_Enfant:[$ch_Enfant] ch_Frere:[$ch_Frere] numFAMS:[$numFAMS]"
    ged:init "$fic_gedcom"
 
-#   bckOpt="/tmp/.gen.lock.$$"
-#   save "fic=[$bckOpt]?tmp=[$TMP_DIR]?ged=[$fic_gedcom]?url=[$url_param]"
-#   instance
    KeyID=$(individu:search "ficGedcom=[$fic_gedcom]&KeyIDApple=[0]&Qui=[${QUI_PARENT}]&uri=[${uri}]&getParent=[${ch_Parent}]&getEpoux=[${ch_Epoux}]&getFrere=[${ch_Frere}]&getEnfant=[${ch_Enfant}]&numFamille=[${numFAMS}]")
    retCode="$?"
    if [[ "$retCode" -eq 0 ]]; then
@@ -363,3 +362,6 @@ main() {
 }
 
 main "$@"
+#suf="pas01"
+#url="https://gw.geneanet.org/lserranomiralle?lang=en&iz=0&p=vicente+el+menor+ou+vicent+nofre+bonaventura&n=lopez+carbonell"
+#main -vdxi --tmp="$HOME/genealogie/geneanet_$suf.lopez" --cache="${HOME}/geneanet_cache" -c "/etc/secret/config" -o "$HOME/genealogie/geneanet_lopez_$suf.ged" -s -u "$url"

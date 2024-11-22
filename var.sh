@@ -13,6 +13,8 @@ nbAppel=0
 # Pattern pour les nom de fichier
 pattern="\$TMP_DIR/gen_%04d_%s"
 
+# Mac OS, sed -i 'extention' -e .... et Linux sed -i -e
+[[ "$OSTYPE" == *"arwin"* ]] && optSed="''" || optSed=''
 
 declare -i optNbAsc=0 nbAsc=-1 optNbDesc=0 nbDesc=-1 
 
@@ -28,14 +30,8 @@ DIR_CACHE="${HOME}/geneanet_cache"
 FIC_CACHE="${DIR_CACHE}/cache"
 declare -i OPT_CACHE=1 OPT_SOURCE=1 OPT_NOTE=1 OPT_DATE=1 UPDATE_CACHE=1
 
-user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-user_agent="Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"
-user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0"
-user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 15_0_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1"
-user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
-user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0"
-TRACE=false
 DEBUG=false
+FMT_TRACE="json"
 QUI_PERE="PERE"
 QUI_MERE="MERE"
 QUI_PARENT="PARENT"
@@ -43,8 +39,7 @@ QUI_CONJOINT="CONJOINT"
 QUI_ENFANT="ENFANT"
 QUI_FRERE="FRERE"
 TAB_LOG=""
-tab=""
-CHRONO="false"
+
 portrait="Portrait"
 
 INDI_DEJA_TRAITE="101"
@@ -69,10 +64,6 @@ g_noteMariage=""
 g_noteDeces=""
 g_noteFamille=""
 g_noteDivorce=""
-
-declare -A html
-declare -A tbFamille
-declare -i maxFam=0
 
 fic_id="${TMP_DIR}/KeyID"
 fic_id_exist="${fic_id}_exist"

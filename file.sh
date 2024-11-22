@@ -2,7 +2,7 @@ file:get() {
    local _p=""
 
    eval _p="$pattern"
-   printf "$_p" "$@"
+   builtin printf "$_p" "$@"
 }
 
 vartype() {
@@ -32,11 +32,7 @@ vartype() {
 }
 
 file:write() {
-   local _fic="$1"
-   local _value="$2"
-
-   log:info "write [$_value] NbElem:[${#_value[@]}] dans fic:[$_fic]"
-   echo "$_value" >> "$_fic"
+   builtin echo "$2" >> "$1"
    return "$?"
 }
 
@@ -44,11 +40,3 @@ tst() {
    local KeyID="$1"
    file:get "all_page"
 }
-
-#TMP_DIR="/tmp"
-#pattern="$TMP_DIR/gen_%04d_%s"
-#KeyID=8
-#tst 1
-#echo
-#tst 56
-#file:get 1 "all_page"
