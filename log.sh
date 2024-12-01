@@ -66,9 +66,11 @@ log:info() {
 
    if (( _logging )); then
       if [[ "$_logging_fmt" == "json" ]]; then
-         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"INFO\", \"src0\": \"${BASH_SOURCE[2]##*/}\",\"fct0\":\"${FUNCNAME[2]}\",\"line0\": \"${BASH_LINENO[1]}\", \"src\": \"${BASH_SOURCE[1]##*/}\",\"fct\": \"${FUNCNAME[1]}\",\"line\": \"${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
+         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"INFO\", \"fct0\":\"${FUNCNAME[2]}:${BASH_LINENO[1]}\", \"fct\": \"${FUNCNAME[1]}:${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
+#         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"INFO\", \"src0\": \"${BASH_SOURCE[2]##*/}\",\"fct0\":\"${FUNCNAME[2]}\",\"line0\": \"${BASH_LINENO[1]}\", \"src\": \"${BASH_SOURCE[1]##*/}\",\"fct\": \"${FUNCNAME[1]}\",\"line\": \"${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
       else
-         log:put "[INFO] " "$_idFct: $*"
+         builtin echo "[INFO]  ${FUNCNAME[1]}:${BASH_LINENO[0]} : $*"  >&2
+#         log:put "[INFO] " "$_idFct: $*"
       fi
    fi
 }
@@ -80,9 +82,11 @@ log:debug() {
 
    if (( _logging_debug )); then
       if [[ "$_logging_fmt" == "json" ]]; then
-         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"DEBUG\", \"src0\": \"${BASH_SOURCE[2]##*/}\",\"fct0\":\"${FUNCNAME[2]}\",\"line0\": \"${BASH_LINENO[1]}\", \"src\": \"${BASH_SOURCE[1]##*/}\",\"fct\": \"${FUNCNAME[1]}\",\"line\": \"${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
+#         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"DEBUG\", \"src0\": \"${BASH_SOURCE[2]##*/}\",\"fct0\":\"${FUNCNAME[2]}\",\"line0\": \"${BASH_LINENO[1]}\", \"src\": \"${BASH_SOURCE[1]##*/}\",\"fct\": \"${FUNCNAME[1]}\",\"line\": \"${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
+         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"INFO\", \"fct0\":\"${FUNCNAME[2]}:${BASH_LINENO[1]}\", \"fct\": \"${FUNCNAME[1]}:${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
       else
-         log:put "[DEBUG]" "$_idFct: $*"
+         builtin echo "[DEBUG] ${FUNCNAME[1]}:${BASH_LINENO[0]} : $*"  >&2
+#         log:put "[DEBUG] " "$_idFct: $*"
       fi
    fi
 }
@@ -95,9 +99,11 @@ log:error() {
 
    if (( _logging_debug )); then
       if [[ "$_logging_fmt" == "json" ]]; then
-         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"ERROR\", \"src0\": \"${BASH_SOURCE[2]##*/}\",\"fct0\":\"${FUNCNAME[2]}\",\"line0\": \"${BASH_LINENO[1]}\", \"src\": \"${BASH_SOURCE[1]##*/}\",\"fct\": \"${FUNCNAME[1]}\",\"line\": \"${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
+#         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"ERROR\", \"src0\": \"${BASH_SOURCE[2]##*/}\",\"fct0\":\"${FUNCNAME[2]}\",\"line0\": \"${BASH_LINENO[1]}\", \"src\": \"${BASH_SOURCE[1]##*/}\",\"fct\": \"${FUNCNAME[1]}\",\"line\": \"${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
+         builtin echo "{\"timestamp\": \"$_logging_chrono\",\"level\": \"INFO\", \"fct0\":\"${FUNCNAME[2]}:${BASH_LINENO[1]}\", \"fct\": \"${FUNCNAME[1]}:${BASH_LINENO[0]}\",\"message\": \"$*\"}"  >&2
       else
-         log:put "[ERROR]" "$_idFct: $*"
+         builtin echo "[ERROR] ${FUNCNAME[1]}:${BASH_LINENO[0]} : $*"  >&2
+#         log:put "[ERROR] " "$_idFct: $*"
       fi
    fi
 }

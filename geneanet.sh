@@ -46,12 +46,12 @@ traperror() {
 
 typeset _Src_name=${0##*/}
 typeset _Src_dir="${0%/*}" # dirname($0)
-for _Src_file in var file log date cache cherche_html cherche_enfant cherche_indi cherche_parent cherche_source cherche_note write_indi; do
+for _Src_file in var file key fct log date cache html enfant index individu parent source note ged famille; do
     source "${_Src_dir}/${_Src_file}.sh"
 done
 
 for _Src_file in const; do
-    source "${_Src_dir}/en/${_Src_file}.sh"
+    source "${_Src_dir}/${language}/${_Src_file}.sh"
 done
 
 initialise_individu() {
@@ -161,11 +161,6 @@ save() {
    log:info "_fic:[$_fic] _tmp_dir:[$_tmp_dir] _fic_ged:[$_fic_ged] _url:[$_url]"
    echo "fic=[$bckOpt]?tmp=[$TMP_DIR]?ged=[$fic_gedcom]?url=[$url_param]" > "${_fic}"
 }
-
-instance() {
-   :
-}
-
 
 main() {
    local uri=""

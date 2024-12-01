@@ -37,6 +37,8 @@ LG_MOIS_10="October"
 LG_MOIS_11="November"
 LG_MOIS_12="December"
 
+CAL_JULIEN="Julian"
+
 LB_ENFANT_AVEC_HOMME="With " # Pas Marié/Relation mais avec des enfants ....
 LB_MARIE="Married"
 LB_MARIE_AVEC=" to "
@@ -58,6 +60,7 @@ LB_NOTE_NAISSANCE="Birth"
 LB_NOTE_UNION="Family Note"
 LB_NOTE_UNION_AVEC="Marriage with"
 LB_NOTE_DECES="Death"
-#LB_JOUR=" (Monday)\| (Tuesday)\| (Wednesday)\| (Thursday)\| (Friday)\| (Saturday)\| (Sunday)"
+LB_NOTE_FAMILLE="Death"
 LB_JOUR=" \(Monday\)| \(Tuesday\)| \(Wednesday\)| \(Thursday\)| \(Friday\)| \(Saturday\)| \(Sunday\)"
+
 MSG_NOT_FOUND="Config file [%s] not found\n"

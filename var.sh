@@ -1,4 +1,4 @@
-gsed="/usr/local/bin/gsed"
+individu_index=()
 LC_CTYPE=C
 LANG=C
 language=en
@@ -15,6 +15,7 @@ pattern="\$TMP_DIR/gen_%04d_%s"
 
 # Mac OS, sed -i 'extention' -e .... et Linux sed -i -e
 [[ "$OSTYPE" == *"arwin"* ]] && optSed="''" || optSed=''
+[[ "$OSTYPE" == *"arwin"* ]] && sed="gsed" || sed="sed"
 
 declare -i optNbAsc=0 nbAsc=-1 optNbDesc=0 nbDesc=-1 
 
@@ -47,7 +48,8 @@ INDI_INCONNU="102"
 
 FAMILY_EXIST="200"
 FAMILY_NO_EXIST="100"
-ERROR="1"
+declare -r OK="0"
+declare -r ERROR="1"
 
 FOUND=200
 NOT_FOUND=100

@@ -1,3 +1,6 @@
+source "var.sh"
+source "fr/const.sh"
+source "log.sh"
 trace_date="true"
 
 mois_court() {
@@ -30,9 +33,9 @@ recupere_date_from_chaine() {
    local local_annee=""
 
    log:info "mDate:[$mDate] nbMot:[$nbMot] fmtUK:[$fmtUK]"
-   local_jour=$(echo "$mDate" | sed -e "s/ .*$//g")
-   local_annee=$(echo "$mDate" | sed -e "s/^.* //g")
-   local_mois=$(echo "$mDate" | sed -e 's/'$local_jour' //g' | sed -e 's/ '$local_annee'//g')
+   local_jour=$(echo "$mDate" | $sed -e "s/ .*$//g")
+   local_annee=$(echo "$mDate" | $sed -e "s/^.* //g")
+   local_mois=$(echo "$mDate" | $sed -e 's/'$local_jour' //g' | $sed -e 's/ '$local_annee'//g')
 
    if [[ "$nbMot" -eq 1 ]]; then
       # log:info "   Date : aaaa"
@@ -83,7 +86,8 @@ jour_mois_Annee() {
 
    # log:info "jour_mois_Annee() PARAM:[$1]"
    # A cause de Juillet et le mot recherche "le", je supprime le mois de juillet pour faire le test
-   date_sans_mois=$(echo $1 | sed -e 's/juillet//g' | sed -e 's/aout//g')
+   log:info "Parametre:[$1]"
+   date_sans_mois=$(echo $1 | $sed -e 's/juillet//g' | $sed -e 's/aout//g')
    dateEntre=$(echo "$date_sans_mois" | grep "${LG_OU}${LG_LE}\|${LG_OU}${LG_EN}\|${LG_ET}" | wc -l | bc)
    log:info "date_sans_mois:[$date_sans_mois] dateEntre:[$dateEntre]"
    # log:info "   dateEntre:[$dateEntre]"
@@ -92,7 +96,7 @@ jour_mois_Annee() {
       return 1
    fi
    fmtUK=$(echo "$1" | grep ',' | wc -l | bc)
-   mDate=$(echo "$1" | sed -e "s/${LG_EN}//g" -e "s/,//g")
+   mDate=$(echo "$1" | $sed -e "s/${LG_EN}//g" -e "s/,//g")
    nbMot=$(echo "$mDate" | wc -w | bc)
 
    if [[ "$dateEntre" -eq 0 ]]; then
@@ -102,12 +106,12 @@ jour_mois_Annee() {
       log:info "nb_Mot_deb:[$nb_Mot_deb] local_bj:[$local_bj] local_bm:[$local_bm] local_ba:[$local_ba]"
    else
       # log:info "   date entre"
-      entre_fin=$(echo $1 | sed -e "s/^.* et le //g" | sed -e "s/^.* et //g" | sed -e 's/^.* ou le //g' | sed -e 's/^.* ou en //g' | sed -e 's/^.* ou //g')
-      entre_debut=$(echo $1 | sed -e 's/'"$entre_fin"'//g' | sed -e 's/ et ''//g' | sed -e 's/le //g' | sed -e 's/en //g' | sed -e 's/ ou //g')
+      entre_fin=$(echo $1 | $sed -e "s/^.* et le //g" | $sed -e "s/^.* et //g" | $sed -e 's/^.* ou le //g' | $sed -e 's/^.* ou en //g' | $sed -e 's/^.* ou //g')
+      entre_debut=$(echo $1 | $sed -e 's/'"$entre_fin"'//g' | $sed -e 's/ et ''//g' | $sed -e 's/le //g' | $sed -e 's/en //g' | $sed -e 's/ ou //g')
 
-      entre_fin=$(echo $1 | sed -e "s/^.*${LG_ET}${LG_LE}//g" -e "s/^.*${LG_ET}//g" -e "s/^.*${LG_OU}${LG_LE}//g" | sed -e "s/^.*${LG_OU}${LG_EN}//g" -e "s/^.*${LG_OU}//g" -e "s/${LG_EN}//g")
+      entre_fin=$(echo $1 | $sed -e "s/^.*${LG_ET}${LG_LE}//g" -e "s/^.*${LG_ET}//g" -e "s/^.*${LG_OU}${LG_LE}//g" | $sed -e "s/^.*${LG_OU}${LG_EN}//g" -e "s/^.*${LG_OU}//g" -e "s/${LG_EN}//g")
       [[ "$LG_LE" == "" ]] && LG_LE="sdkjfglksdjglkdjfglkfdgjlfdkjsglk"
-      entre_debut=$(echo $1 | sed -e 's/'"$entre_fin"'//g' | sed -e "s/${LG_ET}//g" -e "s/${LG_EN}//g" -e "s/${LG_OU}//g" -e "s/${LG_LE}//g" | sed -e 's/ $//g')
+      entre_debut=$(echo $1 | $sed -e 's/'"$entre_fin"'//g' | $sed -e "s/${LG_ET}//g" -e "s/${LG_EN}//g" -e "s/${LG_OU}//g" -e "s/${LG_LE}//g" | $sed -e 's/ $//g')
 
       nb_Mot_deb=$(echo "$entre_debut" | wc -w | bc)
       nb_Mot_fin=$(echo "$entre_fin" | wc -w | bc)
@@ -175,8 +179,11 @@ date:get() {
    trace_date_get="true"
    local fic="$1"
    local dt_label_date="$2"
+   declare -n dt_naissance="$3"
+   declare -n dt_ville="$4"
+   declare -n dt_julien="$5"
+
    local dt_fic_tmp="${TMP_DIR}/gen_date_${RANDOM}${RANDOM}"
-   local dt_naissance=""
    local dt_tag=""
    local dt_jour=""
    local dt_mois=""
@@ -184,38 +191,30 @@ date:get() {
    local dt_jour_FIN=""
    local dt_mois_FIN=""
    local dt_annee_FIN=""
-   local dt_ville=""
    local NoDate=0
-   local dtJulien=0
-   local strNull=""
 
    log:info "fic:[$fic] dt_label_date:[$dt_label_date]"
-   sed -e "s/<em>//g" -e "s/<\/em>//g" -e "s/<\/i>//g" -e "s/<i>//g"  -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' "$fic"  | sed -e "s/([^)]*)//g" -e 's/\//CHARSLASH/g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
-   sed -i $optSed -e "s/ Julian ([^)]*)//g" -e "s/Julian -/-/g" -e "s/e&nbsp;/ /g" -e "s/<em>//g" -e "s/<\/em>//g" "$fic"
-   # Si date Julien, je ne fais aucun traitement et je la retourne 
-   # dans paramètre $12 pour la mettre dans la note 
-#   dtJulien=$(cat $dt_fic_tmp | grep " Julian (" | wc -l | bc)
-   dtJulien=0
-   nbLigne=$(cat $dt_fic_tmp | wc -l | bc)
-   log:debug "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
-   if [[ "$nbLigne" -ne 0  && "$dtJulien" -eq 0 ]]; then
-         local ville=$(sed "s/^$dt_label_date.* [1-2][0-9][0-9][0-9],//g" "$dt_fic_tmp" | grep -v "$dt_label_date")
+   $sed -e "s/<em>//g" -e "s/<\/em>//g" -e "s/<\/i>//g" -e "s/<i>//g"  -e 's/<\/li>//g' -e 's/<li>//g' -e 's/1er/1/g' -e 's/\&nbsp\;/ /g' "$fic"  | $sed -e "s/([^)]*)//g" -e 's/\//CHARSLASH/g' | { grep "$dt_label_date\( \|,\)" || test $? = 1; } >"$dt_fic_tmp"
+
+   nbLigne=$(cat $dt_fic_tmp 2>/dev/null | wc -l | bc)
+   log:debug "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp 2>/dev/null) NbLigne:[$(cat $dt_fic_tmp 2>/dev/null | wc -l | bc)]"
+   if [[ "$nbLigne" -ne 0 ]]; then
+         local ville=$($sed "s/^$dt_label_date.* [1-2][0-9][0-9][0-9],//g" "$dt_fic_tmp" | grep -v "$dt_label_date")
       if [[ "$dt_label_date" == "$LG_MARIED_M" ]]; then
-         local ville=$(sed "s/^$dt_label_date.* [1-2][0-9][0-9][0-9],//g" "$dt_fic_tmp" | grep -v "$dt_label_date")
-         [[ -n "$ville" ]] && echo "$(sed -e "s/$ville.*$//g" "$dt_fic_tmp" | sed -e "s/,$//g" ) - $ville" >  "$dt_fic_tmp"
+         local ville=$($sed "s/^$dt_label_date.* [1-2][0-9][0-9][0-9],//g" "$dt_fic_tmp" | grep -v "$dt_label_date")
+         [[ -n "$ville" ]] && echo "$($sed -e "s/$ville.*$//g" "$dt_fic_tmp" | $sed -e "s/,$//g" ) - $ville" >  "$dt_fic_tmp"
       fi
-      log:debug "Contenue du fichier $dt_fic_tmp: $(cat $dt_fic_tmp) NbLigne:[$(cat $dt_fic_tmp | wc -l | bc)]"
 
       # String contain only the town & not the date of the event
       # Ex: Married, Lyon, France
       NoDate=$(grep "${dt_label_date},\|${dt_label_date} -" "$dt_fic_tmp" | wc -l | bc)
       if [[ "$NoDate" -eq 0 ]]; then
-         # Pour version UK ou LG_LE est null et fait planter le sed sous macos
+         # Pour version UK ou LG_LE est null et fait planter le $sed sous macos
          LG_THE=${LG_LE:- }
          # Et j'enleve tout les mois pour ne pas avoir de caractere parasite quand je recherche le moment de la date (entre, né le, ......)
          mDate=$(grep "${dt_label_date} " "$dt_fic_tmp" | 
-            sed -E "s/($LG_MOIS_01|$LG_MOIS_02|$LG_MOIS_03|$LG_MOIS_04|$LG_MOIS_05|$LG_MOIS_06|$LG_MOIS_07|$LG_MOIS_08|$LG_MOIS_09|$LG_MOIS_10|$LG_MOIS_11|$LG_MOIS_12)//g" | \
-            sed -E "s/$dt_label_date ($LG_VERS|$LG_PEUT_ETRE_EN|$LG_PEUT_ETRE_LE|$LG_ENTRE$LG_THE|$LG_ENTRE|$LG_AVANT|$LG_APRES|$LG_EN|$LG_THE)//g" "$dt_fic_tmp" | sed -e "s/${dt_label_date} //g" -e "s/ - .*$//g")
+            $sed -E "s/($LG_MOIS_01|$LG_MOIS_02|$LG_MOIS_03|$LG_MOIS_04|$LG_MOIS_05|$LG_MOIS_06|$LG_MOIS_07|$LG_MOIS_08|$LG_MOIS_09|$LG_MOIS_10|$LG_MOIS_11|$LG_MOIS_12)//g" | \
+            $sed -E "s/$dt_label_date ($LG_VERS|$LG_PEUT_ETRE_EN|$LG_PEUT_ETRE_LE|$LG_ENTRE$LG_THE|$LG_ENTRE|$LG_AVANT|$LG_APRES|$LG_EN|$LG_THE)//g" "$dt_fic_tmp" | $sed -e "s/${dt_label_date} //g" -e "s/ - .*$//g")
 
          # Traitement MARRIED
          Quand=$(sed -e "s/$mDate.*$//g" "$dt_fic_tmp")
@@ -234,7 +233,7 @@ date:get() {
             dt_naissance=$(echo "  2  $dt_tag $dt_jour $dt_mois $dt_annee" | tr -s '[:space:]')
          fi
          if [[ $(grep " - " "$dt_fic_tmp" | wc -l | bc) -eq 1 ]]; then
-            dt_ville=$(grep "$dt_label_date " "$dt_fic_tmp" | sed -e 's/^.* - //g' -e 's/<\/li>.*$//g' -e "s/^ *//g" -e "s/CHARSLASH/\//g")
+            dt_ville=$(grep "$dt_label_date " "$dt_fic_tmp" | $sed -e 's/^.* - //g' -e 's/<\/li>.*$//g' -e "s/^ *//g" -e "s/CHARSLASH/\//g")
          else
             dt_ville=""
          fi
@@ -243,13 +242,20 @@ date:get() {
       fi
       log:info "date:get() dt_naissance:[$dt_naissance] dt_tag[$dt_tag] dt_label_date:[$dt_label_date] dt_ville:[$dt_ville]"
    fi
-
-   eval "$3=\"$dt_naissance\""
-   eval "${4}=\"$dt_ville\""
-   [[ "$dtJulien" -ne 0 ]] && eval "${5}=\"$(cat $dt_fic_tmp)\"" || eval "${5}=\"$strNull\""
-   rm $dt_fic_tmp
 }
 
 main() {
    local i=0
 }
+
+
+
+
+#while read _date; do
+#   echo "$_date" > /tmp/tototiti
+#   label=$(echo "$_date" | $sed -e 's/ .*//g')
+#   echo "$_date"
+#   date:get "/tmp/tototiti" "$label" param1 param2 param3 param4
+#   echo -e "    param1:[$param1]\t\t\t\t\tparam2:[$param2] param3:[$param3] param4:[$param4] param5:[$param5] param6:[$param6]"
+#   echo ""
+#done < /Users/tandreu/Downloads/dt.txt
